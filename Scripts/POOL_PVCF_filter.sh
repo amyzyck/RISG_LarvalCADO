@@ -39,15 +39,15 @@ if [ "$GZIP" == "TRUE" ]; then
 	ls raw.*.vcf.gz | sed 's/raw.//g' | sed 's/.vcf.gz//g' > list
 	#cat list | parallel --no-notice -j $NumProc "vcftools --gzvcf raw.{}.vcf.gz --minQ 30 --recode --recode-INFO-all --max-missing 0.25 --out $PREFIX.TRS.{} 2> $PREFIX.filter.errors"
 	#cat list | parallel --no-notice -j $NumProc "bcftools view -i 'F_MISSING<0.75 && QUAL > 29' raw.{}.vcf.gz -O v | vcftools --vcf - --minDP 5 --recode --recode-INFO-all --stdout 2> $PREFIX.filter.errors | vcftools --vcf - --max-missing 0.75 --maf 0.0001 --recode --recode-INFO-all --stdout 2>> $PREFIX.filter.errors| bgzip -c > $PREFIX.TRSdp5g75.{}.recode.vcf.gz 2>> $PREFIX.filter.errors"
-	cat list | parallel --no-notice -j $NumProc "bcftools view -i 'F_MISSING<0.75 && QUAL > 29' raw.{}.vcf.gz -O v | bcftools +setGT -- -t q -n . -i 'FORMAT/DP<5' 2> $PREFIX.filter.errors | bcftools view -i 'F_MISSING<0.25 && MAF > 0.0001' -O z -o $PREFIX.TRSdp5g75.{}.recode.vcf.gz" 2>> $PREFIX.filter.errors
+	cat list | parallel --no-notice -j $NumProc "bcftools view -i 'F_MISSING<0.75 && QUAL > 29' raw.{}.vcf.gz -O v | bcftools +setGT -- -t q -n . -i 'FORMAT/DP<5' 2> $PREFIX.filter.errors | bcftools view -i 'F_MISSING<0.25 && MAF > 0.0001' -O z -o $PREFIX.TRSdp.$DEPTH.g75.{}.recode.vcf.gz" 2>> $PREFIX.filter.errors
 
 else
-	NumInd=$(ls raw.*.bcf 2> /dev/null | wc -l)
+	NumInd=$(ls Collated.raw.*.bcf 2> /dev/null | wc -l)
 	NumInd=$(($NumInd - 0))
 	NumK=$(($NumInd/1000))
-	ls raw.*.bcf | sed 's/raw.//g' | sed 's/.bcf//g' > list
+	ls Collated.raw.*.bcf | sed 's/raw.//g' | sed 's/.bcf//g' > list
 	#cat list | parallel --no-notice --no-notice -j $NumProc "vcftools --vcf raw.{}.vcf --minQ 30 --recode --recode-INFO-all --max-missing 0.25 --out $PREFIX.TRS.{} 2> /dev/null"
-	cat list | parallel --no-notice -j $NumProc "bcftools view -i 'F_MISSING<0.75' raw.{}.bcf  | bcftools +setGT -- -t q -n . -i 'FORMAT/DP<"$DEPTH"' 2> $PREFIX.filter.errors | bcftools view -i 'F_MISSING<0.25 && INFO/AO/INFO/RO > 0.015' -O z -o $PREFIX.TRSdp.$DEPTH.g75.{}.recode.vcf.gz 2>> $PREFIX.filter.errors"
+	cat list | parallel --no-notice -j $NumProc "bcftools view -i 'F_MISSING<0.75' Collated.raw.{}.bcf  | bcftools +setGT -- -t q -n . -i 'FORMAT/DP<"$DEPTH"' 2> $PREFIX.filter.errors | bcftools view -i 'F_MISSING<0.25 && INFO/AO/INFO/RO > 0.015' -O z -o $PREFIX.TRSdp.$DEPTH.g75.{}.recode.vcf.gz 2>> $PREFIX.filter.errors"
 	
 fi
 
@@ -55,7 +55,7 @@ if [ ! -d "raw" ]; then
 	mkdir raw
 fi
 
-mv raw.*.vcf.gz raw.*.bcf ./raw 2> /dev/null
+mv raw.*.vcf.gz Collated.raw.*.bcf ./raw 2> /dev/null
 
 
 
@@ -79,7 +79,7 @@ echo "quality versus depth, allelic balance at heterzygous individuals, and pair
 echo -e "The script assumes that loci and individuals with low call rates (or depth) have already been removed. \n"
 echo -e "Contact Jon Puritz (jpuritz@gmail.com) for questions and see script comments for more details on particular filters \n"
 
-PREFIX="$PREFIX.TRSdp.$DEPTH.g75.nDNA"
+NEW_PREFIX="$PREFIX.TRSdp.$DEPTH.g75.nDNA"
 
 #Creates a file with the original site depth and qual for each locus
 
@@ -88,28 +88,28 @@ AWK2='!/#/ {print $1}'
 AWK3='!/NP/ && !/#/'
 AWK4='!/#/ {print $1 "\t" $2}'
 
-seq 0 $NumK | parallel --no-notice -k -j $NumProc "zcat $PREFIX.0{}*.vcf.gz | cut -f8  | grep -P -oe 'DP=[0-9]*' | sed -s 's/DP=//g' " > TEMP.{}.DEPTH
+seq 0 $NumK | parallel --no-notice -k -j $NumProc "zcat $NEW_PREFIX.{}.vcf.gz | cut -f8  | grep -P -oe 'DP=[0-9]*' | sed -s 's/DP=//g' " > TEMP.{}.DEPTH
 
-cat TEMP.*.DEPTH > $PREFIX.DEPTH
+cat TEMP.*.DEPTH > $NEW_PREFIX.DEPTH
 rm TEMP*.DEPTH
 
-seq 0 $NumK  | parallel --no-notice -k -j $NumProc "zcat $PREFIX.0{}*.vcf.gz | mawk '$AWK1' " > TEMP.{}.loci.qual
-cat TEMP.*.loci.qual > $PREFIX.loci.qual
+seq 0 $NumK  | parallel --no-notice -k -j $NumProc "zcat $NEW_PREFIX.{}.vcf.gz | mawk '$AWK1' " > TEMP.{}.loci.qual
+cat TEMP.*.loci.qual > $NEW_PREFIX.loci.qual
 rm TEMP.*.loci.qual
 
 
-OLD=$( cat list | parallel --no-notice -j $NumProc "zcat $PREFIX.{}.vcf.gz | mawk '$AWK2' | wc -l" | mawk '{sum = sum + $1} END {print sum}' )
+OLD=$( cat list | parallel --no-notice -j $NumProc "zcat $NEW_PREFIX.{}.vcf.gz | mawk '$AWK2' | wc -l" | mawk '{sum = sum + $1} END {print sum}' )
 
 if [ "$PE" != "yes" ]; then
-	FILTERED2=$(cat list | parallel --no-notice -j $NumProc "zcat $PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED > 0.05 & PAIREDR > 0.05 & PAIREDR / PAIRED < 5 & PAIREDR / PAIRED > 0.05 | PAIRED < 0.05 & PAIREDR < 0.05' -s | mawk '$AWK2' | wc -l " | mawk '{sum = sum + $1} END {print sum}' )
+	FILTERED2=$(cat list | parallel --no-notice -j $NumProc "zcat $NEW_PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED > 0.05 & PAIREDR > 0.05 & PAIREDR / PAIRED < 5 & PAIREDR / PAIRED > 0.05 | PAIRED < 0.05 & PAIREDR < 0.05' -s | mawk '$AWK2' | wc -l " | mawk '{sum = sum + $1} END {print sum}' )
 	NUMFIL2=$(($OLD - $FILTERED2))
 	echo -e "Number of sites filtered based on properly paired status\n" $NUMFIL2 "of" $OLD "\n"
-	echo -e "Number of sites filtered based on properly paired status\n" $NUMFIL2 "of" $OLD "\n" >> $PREFIX.filterstats
+	echo -e "Number of sites filtered based on properly paired status\n" $NUMFIL2 "of" $OLD "\n" >> $NEW_PREFIX.filterstats
 else	
-	FILTERED2=$(cat list | parallel --no-notice -j $NumProc "zcat $PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED < 0.005 & PAIREDR > 0.005 | PAIRED > 0.005 & PAIREDR < 0.005' -t NP -F PASS -A | mawk '$AWK3' | wc -l" | mawk '{sum = sum + $1} END {print sum}' )
+	FILTERED2=$(cat list | parallel --no-notice -j $NumProc "zcat $NEW_PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED < 0.005 & PAIREDR > 0.005 | PAIRED > 0.005 & PAIREDR < 0.005' -t NP -F PASS -A | mawk '$AWK3' | wc -l" | mawk '{sum = sum + $1} END {print sum}' )
 	NUMFIL2=$(($OLD - $FILTERED2))
 	echo -e "Number of sites filtered based on properly paired status\n" $NUMFIL2 "of" $OLD "\n"
-	echo -e "Number of sites filtered based on properly paired status\n" $NUMFIL2 "of" $OLD "\n" >> $PREFIX.filterstats
+	echo -e "Number of sites filtered based on properly paired status\n" $NUMFIL2 "of" $OLD "\n" >> $NEW_PREFIX.filterstats
 
 fi
 
@@ -118,53 +118,53 @@ wait
 wait
 
 #Calculates the average depth and three times the square root of mean depth
-DEPTH=$(mawk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }' $PREFIX.DEPTH)
+DEPTH=$(mawk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }' $NEW_PREFIX.DEPTH)
 MD=$(python -c "import math; print( round(math.sqrt($DEPTH)))")
 MD=$(python -c "import math; print( round( $MD * 3))")
 DEPTH=$(python -c "import math; print( round($DEPTH + $MD))")
 
 #Filters loci above the mean depth + 1 standard deviation that have quality scores that are less than 1*DEPTH
-paste $PREFIX.loci.qual $PREFIX.DEPTH | mawk -v x=$DEPTH '$4 > x'| mawk -v x=$DEPTH '$3 < 1 * x' > $PREFIX.lowQDloci
+paste $NEW_PREFIX.loci.qual $NEW_PREFIX.DEPTH | mawk -v x=$DEPTH '$4 > x'| mawk -v x=$DEPTH '$3 < 1 * x' > $NEW_PREFIX.lowQDloci
 
-SITES=$(cat list | parallel --no-notice -j $NumProc "vcftools --gzvcf $PREFIX.{}.vcf.gz --exclude-positions $PREFIX.lowQDloci 2>&1 | grep Sites"| cut -f4 -d " " | mawk '{sum = sum + $1} END {print sum}' )
+SITES=$(cat list | parallel --no-notice -j $NumProc "vcftools --gzvcf $NEW_PREFIX.{}.vcf.gz --exclude-positions $NEW_PREFIX.lowQDloci 2>&1 | grep Sites"| cut -f4 -d " " | mawk '{sum = sum + $1} END {print sum}' )
 LQDL=$(( $OLD - $SITES ))
 
 echo -e "Number of sites filtered based on high depth and lower than 2*DEPTH quality score\n" $LQDL "of" $OLD "\n"
-echo -e "Number of sites filtered based on high depth and lower than 2*DEPTH quality score\n" $LQDL "of" $OLD "\n" >> $PREFIX.filterstats
+echo -e "Number of sites filtered based on high depth and lower than 2*DEPTH quality score\n" $LQDL "of" $OLD "\n" >> $NEW_PREFIX.filterstats
 
 #Recalculates site depth for sites that have not been previously filtered
 if [ "$PE" != "yes" ]; then
 
-	cat list | parallel --no-notice -k -j $NumProc "zcat $PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED > 0.05 & PAIREDR > 0.05 & PAIREDR / PAIRED < 5 & PAIREDR / PAIRED > 0.05 | PAIRED < 0.05 & PAIREDR < 0.05' -s | vcftools --vcf - --remove-filtered NP --exclude-positions $PREFIX.lowQDloci --site-depth --out $PREFIX.{} 2>> $PREFIX.filter.errors"
+	cat list | parallel --no-notice -k -j $NumProc "zcat $NEW_PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED > 0.05 & PAIREDR > 0.05 & PAIREDR / PAIRED < 5 & PAIREDR / PAIRED > 0.05 | PAIRED < 0.05 & PAIREDR < 0.05' -s | vcftools --vcf - --remove-filtered NP --exclude-positions $NEW_PREFIX.lowQDloci --site-depth --out $NEW_PREFIX.{} 2>> $NEW_PREFIX.filter.errors"
 else
-	cat list | parallel --no-notice -k -j $NumProc "zcat $PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED < 0.005 & PAIREDR > 0.005 | PAIRED > 0.005 & PAIREDR < 0.005' -t NP -F PASS -A  | vcftools --vcf - --remove-filtered NP --exclude-positions $PREFIX.lowQDloci --site-depth --out $PREFIX.{} 2>> $PREFIX.filter.errors"
+	cat list | parallel --no-notice -k -j $NumProc "zcat $NEW_PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED < 0.005 & PAIREDR > 0.005 | PAIRED > 0.005 & PAIREDR < 0.005' -t NP -F PASS -A  | vcftools --vcf - --remove-filtered NP --exclude-positions $NEW_PREFIX.lowQDloci --site-depth --out $NEW_PREFIX.{} 2>> $NEW_PREFIX.filter.errors"
 fi
 
-seq 0 $NumK  | parallel --no-notice -k -j $NumProc "cut -f3 $PREFIX.0{}*.ldepth" | mawk '!/SUM_DEPTH/' > TEMP.{}.site.depth
-cat TEMP.*.site.depth > $PREFIX.site.depth
+seq 0 $NumK  | parallel --no-notice -k -j $NumProc "cut -f3 $NEW_PREFIX.{}.ldepth" | mawk '!/SUM_DEPTH/' > TEMP.{}.site.depth
+cat TEMP.*.site.depth > $NEW_PREFIX.site.depth
 rm TEMP.*.site.depth
 
-cat list | parallel --no-notice -k -j $NumProc gzip $PREFIX.{}.ldepth
+cat list | parallel --no-notice -k -j $NumProc gzip $NEW_PREFIX.{}.ldepth
 
-DP=$(mawk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }' $PREFIX.site.depth)
-SD=$(mawk '{delta = $1 - avg; avg += delta / NR; mean2 += delta * ($1 - avg); } END { print sqrt(mean2 / NR); }' $PREFIX.site.depth)
+DP=$(mawk '{ sum += $1; n++ } END { if (n > 0) print sum / n; }' $NEW_PREFIX.site.depth)
+SD=$(mawk '{delta = $1 - avg; avg += delta / NR; mean2 += delta * ($1 - avg); } END { print sqrt(mean2 / NR); }' $NEW_PREFIX.site.depth)
 
 #Calculates actual number of individuals in VCF file
 #This is important because loci will now be filtered by mean depth calculated with individuals present in VCF
 FFILE=$(head -1 list)
-IND=$(zcat $PREFIX.$FFILE.vcf.gz |head -1000 | mawk '/#/' | tail -1 | wc -w)
+IND=$(zcat $NEW_PREFIX.$FFILE.vcf.gz |head -1000 | mawk '/#/' | tail -1 | wc -w)
 IND=$(($IND - 9))
 
-mawk '!/D/' $PREFIX.site.depth | mawk -v x=$IND '{print $1/x}' > meandepthpersite
+mawk '!/D/' $NEW_PREFIX.site.depth | mawk -v x=$IND '{print $1/x}' > meandepthpersite
 
 #Calculates a mean depth cutoff to use for filtering
 DP=$(perl -e "print ($DP+ 1.645*$SD) / $IND")
-PP=$(mawk '!/SUM/' $PREFIX.site.depth | sort -rn | perl -e '$d=.05;@l=<>;print $l[int($d*$#l)]' )
+PP=$(mawk '!/SUM/' $NEW_PREFIX.site.depth | sort -rn | perl -e '$d=.05;@l=<>;print $l[int($d*$#l)]' )
 PP=$(perl -e "print int($PP / $IND)")
 GP=$(perl -e "print int($PP * 1.25)")
 export GP
 
-gnuplot << \EOF >> $PREFIX.filterstats
+gnuplot << \EOF >> $NEW_PREFIX.filterstats
 set terminal dumb size 120, 30
 set autoscale
 high=system("echo $GP")
@@ -210,7 +210,7 @@ fi
 
 if [ "$NEWCUTOFF" != "yes" ]; then
 echo -e "Maximum mean depth cutoff is" $PP
-echo -e "Maximum mean depth cutoff is" $PP >> $PREFIX.filterstats
+echo -e "Maximum mean depth cutoff is" $PP >> $NEW_PREFIX.filterstats
 
 else
 	if [[ -z "$5" ]]; then
@@ -219,33 +219,33 @@ else
 	else
 		PP=$5
 	fi
-echo -e "Maximum mean depth cutoff is" $PP >> $PREFIX.filterstats
+echo -e "Maximum mean depth cutoff is" $PP >> $NEW_PREFIX.filterstats
 fi
 
 #Combines all filters to create filtered VCF files
 if [ "$PE" != "yes" ]; then
 
-	cat list | parallel --no-notice -k -j $NumProc "zcat $PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED > 0.05 & PAIREDR > 0.05 & PAIREDR / PAIRED < 5 & PAIREDR / PAIRED > 0.05 | PAIRED < 0.05 & PAIREDR < 0.05' -s | vcftools --vcf - --remove-filtered NP --max-meanDP $PP --recode --exclude-positions $PREFIX.lowQDloci --recode-INFO-all --stdout 2>> $PREFIX.filter.errors | vcfstreamsort -a | bcftools view -O b -o $PREFIX.{}.FIL.bcf 2>> $PREFIX.filter.errors"
+	cat list | parallel --no-notice -k -j $NumProc "zcat $NEW_PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED > 0.05 & PAIREDR > 0.05 & PAIREDR / PAIRED < 5 & PAIREDR / PAIRED > 0.05 | PAIRED < 0.05 & PAIREDR < 0.05' -s | vcftools --vcf - --remove-filtered NP --max-meanDP $PP --recode --exclude-positions $NEW_PREFIX.lowQDloci --recode-INFO-all --stdout 2>> $NEW_PREFIX.filter.errors | vcfstreamsort -a | bcftools view -O b -o $NEW_PREFIX.{}.FIL.bcf 2>> $NEW_PREFIX.filter.errors"
 else
-	cat list | parallel --no-notice -k -j $NumProc "zcat $PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED < 0.005 & PAIREDR > 0.005 | PAIRED > 0.005 & PAIREDR < 0.005' -t NP -F PASS -A  | vcftools --vcf - --remove-filtered NP --max-meanDP $PP --recode --exclude-positions $PREFIX.lowQDloci --recode-INFO-all --stdout 2>> $PREFIX.filter.errors | vcfstreamsort -a | bcftools view -O b -o $PREFIX.{}.FIL.bcf 2>> $PREFIX.filter.errors"
+	cat list | parallel --no-notice -k -j $NumProc "zcat $NEW_PREFIX.{}.vcf.gz | vcffilter -f 'PAIRED < 0.005 & PAIREDR > 0.005 | PAIRED > 0.005 & PAIREDR < 0.005' -t NP -F PASS -A  | vcftools --vcf - --remove-filtered NP --max-meanDP $PP --recode --exclude-positions $NEW_PREFIX.lowQDloci --recode-INFO-all --stdout 2>> $NEW_PREFIX.filter.errors | vcfstreamsort -a | bcftools view -O b -o $NEW_PREFIX.{}.FIL.bcf 2>> $NEW_PREFIX.filter.errors"
 
 fi
 
 
-FILTERED3=$(cat list | parallel --no-notice -j $NumProc "bcftools view $PREFIX.{}.FIL.bcf -O v | mawk '$AWK2' | wc -l" | mawk '{sum = sum + $1} END {print sum}' ) && OLD2=$(cat $PREFIX.site.depth | wc -l)
+FILTERED3=$(cat list | parallel --no-notice -j $NumProc "bcftools view $NEW_PREFIX.{}.FIL.bcf -O v | mawk '$AWK2' | wc -l" | mawk '{sum = sum + $1} END {print sum}' ) && OLD2=$(cat $NEW_PREFIX.site.depth | wc -l)
 
 NUMFIL3=$(($FILTERED2 - $FILTERED3))
 
 echo -e "Number of sites filtered based on maximum mean depth\n" $NUMFIL3 "\n"
-echo -e "Number of sites filtered based on maximum mean depth\n" $NUMFIL3 "\n" >> $PREFIX.filterstats
+echo -e "Number of sites filtered based on maximum mean depth\n" $NUMFIL3 "\n" >> $NEW_PREFIX.filterstats
 
 NUMFIL4=$(($OLD - $FILTERED3))
 
 echo -e "Total number of sites filtered\n" $NUMFIL4 "of" $OLD "\n"
-echo -e "Total number of sites filtered\n" $NUMFIL4 "of" $OLD "\n" >> $PREFIX.filterstats
+echo -e "Total number of sites filtered\n" $NUMFIL4 "of" $OLD "\n" >> $NEW_PREFIX.filterstats
 
 echo -e "Remaining sites\n" $FILTERED3 "\n"
-echo -e "Remaining sites\n" $FILTERED3 "\n" >> $PREFIX.filterstats
+echo -e "Remaining sites\n" $FILTERED3 "\n" >> $NEW_PREFIX.filterstats
 
 
 if [ ! -d "nDNA" ]; then
@@ -256,79 +256,79 @@ if [ ! -d "nDNA" ]; then
 	mkdir nDNA.FIL
 fi
 
-mv $PREFIX.[0-9]*.vcf.gz* ./nDNA
+mv $NEW_PREFIX.[0-9]*.vcf.gz* ./nDNA
 
 echo -e "Variants will now be composed into SNPs and INDels\n"
-echo -e "Variants will now be composed into SNPs and INDels\n" >> $PREFIX.filterstats
+echo -e "Variants will now be composed into SNPs and INDels\n" >> $NEW_PREFIX.filterstats
 
 
 ln -s ../reference.fasta* .	
 
-cat list | parallel --no-notice -j $NumProc "bcftools norm -m - -f reference.fasta $PREFIX.{}.FIL.bcf | vcfallelicprimitives -k -g | vcfstreamsort | bcftools norm -m + -f reference.fasta  | bcftools +fill-tags | bcftools view --threads 2 -V indels,other -O z -o SNP.$PREFIX.{}.FIL.bcf" 2>> $PREFIX.filter.errors
-cat list | parallel --no-notice -j $NumProc "bcftools norm -m - -f reference.fasta $PREFIX.{}.FIL.bcf | vcfallelicprimitives -k -g | vcfstreamsort | bcftools norm -m + -f reference.fasta  | bcftools +fill-tags | bcftools view --threads 2 -v indels,other -O z -o INDELS.$PREFIX.{}.bcf" 2>> $PREFIX.filter.errors
+cat list | parallel --no-notice -j $NumProc "bcftools norm -m - -f reference.fasta $NEW_PREFIX.{}.FIL.bcf | vcfallelicprimitives -k -g | vcfstreamsort | bcftools norm -m + -f reference.fasta  | bcftools +fill-tags | bcftools view --threads 2 -V indels,other -O z -o SNP.$NEW_PREFIX.{}.FIL.bcf" 2>> $NEW_PREFIX.filter.errors
+cat list | parallel --no-notice -j $NumProc "bcftools norm -m - -f reference.fasta $NEW_PREFIX.{}.FIL.bcf | vcfallelicprimitives -k -g | vcfstreamsort | bcftools norm -m + -f reference.fasta  | bcftools +fill-tags | bcftools view --threads 2 -v indels,other -O z -o INDELS.$NEW_PREFIX.{}.bcf" 2>> $NEW_PREFIX.filter.errors
 
 #bcftools norm -m - -f reference.fasta CASE.TRSdp20g1.nDNA.vcf.gz | vcfallelicprimitives -k -g | vcffilter -f "TYPE = snp" | vcfstreamsort | bcftools norm -m + -f reference.fasta | vcftools --vcf - --max-alleles 2 --recod 
 
 echo "Numk is " $NumK
 
-seq 0 $NumK | parallel --no-notice -j $NumProc "ls $PREFIX.0{}*.FIL.bcf > bcf.{}.list"
-seq 0 $NumK | parallel --no-notice -j $NumProc "bcftools concat -n -f bcf.{}.list -O b -o $PREFIX.Collated.{}.FIL.bcf"
+seq 0 $NumK | parallel --no-notice -j $NumProc "ls $NEW_PREFIX.{}.FIL.bcf > bcf.{}.list"
+seq 0 $NumK | parallel --no-notice -j $NumProc "bcftools concat -n -f bcf.{}.list -O b -o $NEW_PREFIX.Collated.{}.FIL.bcf"
 
-ls $PREFIX.Collated.*.FIL.bcf > collated.bcf.list
-bcftools concat -n -f collated.bcf.list -O b | bcftools view -O z --threads $NumProc -o $PREFIX.FIL.vcf.gz
-rm $PREFIX.Collated.*.FIL.bcf
-
-
-mv $PREFIX.*.FIL.bcf ./nDNA.FIL/ 2>> $PREFIX.filter.errors
+ls $NEW_PREFIX.Collated.*.FIL.bcf > collated.bcf.list
+bcftools concat -n -f collated.bcf.list -O b | bcftools view -O z --threads $NumProc -o $NEW_PREFIX.FIL.vcf.gz
+rm $NEW_PREFIX.Collated.*.FIL.bcf
 
 
-FILTERED4=$(cat list | parallel --no-notice -j $NumProc "bcftools view SNP.$PREFIX.{}.FIL.bcf | mawk '$AWK2' | wc -l" | mawk '{sum = sum + $1} END {print sum}' )
-FILTERED5=$(cat list | parallel --no-notice -j $NumProc "bcftools view INDELS.$PREFIX.{}.bcf | mawk '$AWK2' | wc -l" | mawk '{sum = sum + $1} END {print sum}' )
+mv $NEW_PREFIX.*.FIL.bcf ./nDNA.FIL/ 2>> $NEW_PREFIX.filter.errors
+
+
+FILTERED4=$(cat list | parallel --no-notice -j $NumProc "bcftools view SNP.$NEW_PREFIX.{}.FIL.bcf | mawk '$AWK2' | wc -l" | mawk '{sum = sum + $1} END {print sum}' )
+FILTERED5=$(cat list | parallel --no-notice -j $NumProc "bcftools view INDELS.$NEW_PREFIX.{}.bcf | mawk '$AWK2' | wc -l" | mawk '{sum = sum + $1} END {print sum}' )
 
 echo -e "Number of SNPs before filtering for call rate and minor allele frequency\n" $FILTERED4 "\n"
-echo -e "Number of SNPs before filtering for call rate and minor allele frequency\n" $FILTERED4 "\n" >> $PREFIX.filterstats
+echo -e "Number of SNPs before filtering for call rate and minor allele frequency\n" $FILTERED4 "\n" >> $NEW_PREFIX.filterstats
 
 echo -e "Number of INDels\n" $FILTERED5 "\n"
-echo -e "Number of INDels\n" $FILTERED5 "\n" >> $PREFIX.filterstats
+echo -e "Number of INDels\n" $FILTERED5 "\n" >> $NEW_PREFIX.filterstats
 
-mv INDELS.$PREFIX.*.bcf ./nDNA.INDels 2>> $PREFIX.filter.errors
+mv INDELS.$NEW_PREFIX.*.bcf ./nDNA.INDels 2>> $NEW_PREFIX.filter.errors
 
 # Filter by genotype and minor allele frequency
-cat list | parallel --no-notice -j $NumProc "bcftools view SNP.$PREFIX.{}.FIL.bcf 2>/dev/null | bcftools view -i 'F_MISSING = 0' -O b -o SNP.$PREFIX.g1.{}.FIL.bcf" 2>> $PREFIX.filter.errors
+cat list | parallel --no-notice -j $NumProc "bcftools view SNP.$NEW_PREFIX.{}.FIL.bcf 2>/dev/null | bcftools view -i 'F_MISSING = 0' -O b -o SNP.$NEW_PREFIX.g1.{}.FIL.bcf" 2>> $NEW_PREFIX.filter.errors
 
-FILTERED10=$(cat list | parallel --no-notice -j $NumProc "bcftools view SNP.$PREFIX.g1.{}.FIL.bcf | mawk '$AWK2' | wc -l" | mawk '{sum = sum + $1} END {print sum}' )
+FILTERED10=$(cat list | parallel --no-notice -j $NumProc "bcftools view SNP.$NEW_PREFIX.g1.{}.FIL.bcf | mawk '$AWK2' | wc -l" | mawk '{sum = sum + $1} END {print sum}' )
 echo -e "Number of SNPs with 100% call rate\n" $FILTERED10 "\n"
-echo -e "Number of SNPs with 100% call rate\n" $FILTERED10 "\n" >> $PREFIX.filterstats
+echo -e "Number of SNPs with 100% call rate\n" $FILTERED10 "\n" >> $NEW_PREFIX.filterstats
 
 # Collate
-seq 0 $NumK | parallel --no-notice -j $NumProc "ls SNP.$PREFIX.0{}*.FIL.bcf > bcf.{}.list"
-seq 0 $NumK | parallel --no-notice -j $NumProc "bcftools concat -n -f bcf.{}.list -O b -o SNP.$PREFIX.Collated.{}.FIL.bcf"
+seq 0 $NumK | parallel --no-notice -j $NumProc "ls SNP.$NEW_PREFIX.{}.FIL.bcf > bcf.{}.list"
+seq 0 $NumK | parallel --no-notice -j $NumProc "bcftools concat -n -f bcf.{}.list -O b -o SNP.$NEW_PREFIX.Collated.{}.FIL.bcf"
 
-ls SNP.$PREFIX.Collated.*.FIL.bcf > collated.bcf.list
-bcftools concat -n -f collated.bcf.list -O b | bcftools view -O z --threads $NumProc -o SNP.$PREFIX.FIL.vcf.gz
+ls SNP.$NEW_PREFIX.Collated.*.FIL.bcf > collated.bcf.list
+bcftools concat -n -f collated.bcf.list -O b | bcftools view -O z --threads $NumProc -o SNP.$NEW_PREFIX.FIL.vcf.gz
 
-rm SNP.$PREFIX.Collated.*.FIL.bcf
+rm SNP.$NEW_PREFIX.Collated.*.FIL.bcf
 
-mv SNP.$PREFIX.[0-9]*.FIL.bcf SNP.$PREFIX.FIL.vcf.gz ./SNPs
+mv SNP.$NEW_PREFIX.[0-9]*.FIL.bcf SNP.$NEW_PREFIX.FIL.vcf.gz ./SNPs
 
 
-seq 0 $NumK | parallel --no-notice -j $NumProc "ls SNP.$PREFIX.g1.0{}*.FIL.bcf > bcf.{}.list"
-seq 0 $NumK | parallel --no-notice -j $SProc "bcftools concat -n -f bcf.{}.list -O b -o SNP.$PREFIX.g1.Collated.{}.FIL.bcf"
-rm SNP.$PREFIX.g1.[0-9]*.FIL.bcf
-ls SNP.$PREFIX.g1.Collated.*.FIL.bcf > collated.bcf.list
-bcftools concat -n -f collated.bcf.list -O b 2>> $PREFIX.filter.errors | bcftools view -O z --threads $NumProc -o SNP.$PREFIX.g1.FIL.vcf.gz
-rm SNP.$PREFIX.g1.Collated.*.FIL.bcf
+seq 0 $NumK | parallel --no-notice -j $NumProc "ls SNP.$NEW_PREFIX.g1.{}.FIL.bcf > bcf.{}.list"
+seq 0 $NumK | parallel --no-notice -j $SProc "bcftools concat -n -f bcf.{}.list -O b -o SNP.$NEW_PREFIX.g1.Collated.{}.FIL.bcf"
+rm SNP.$NEW_PREFIX.g1.[0-9]*.FIL.bcf
+ls SNP.$NEW_PREFIX.g1.Collated.*.FIL.bcf > collated.bcf.list
+bcftools concat -n -f collated.bcf.list -O b 2>> $NEW_PREFIX.filter.errors | bcftools view -O z --threads $NumProc -o SNP.$NEW_PREFIX.g1.FIL.vcf.gz
+rm SNP.$NEW_PREFIX.g1.Collated.*.FIL.bcf
 	
-mv SNP.$PREFIX.*.*.FIL.vcf.gz ./filtered
+mv SNP.$NEW_PREFIX.*.*.FIL.vcf.gz ./filtered
 
-ls $PREFIX.DEPTH $PREFIX.lo* $PREFIX.ldepth* $PREFIX.site.depth meandepthpersite | parallel --no-notice -j $NumProc gzip {}
-mv $PREFIX.DEPTH.gz $PREFIX.lo* $PREFIX.site.depth.gz meandepthpersite.gz  ./metrics
-cat $PREFIX.*.ldepth.gz > $PREFIX.ldepth.gz 
-mv $PREFIX.ldepth.gz ./metrics
-rm $PREFIX.*.ldepth.gz
+ls $NEW_PREFIX.DEPTH $NEW_PREFIX.lo* $NEW_PREFIX.ldepth* $NEW_PREFIX.site.depth meandepthpersite | parallel --no-notice -j $NumProc gzip {}
+mv $NEW_PREFIX.DEPTH.gz $NEW_PREFIX.lo* $NEW_PREFIX.site.depth.gz meandepthpersite.gz  ./metrics
+cat $NEW_PREFIX.*.ldepth.gz > $NEW_PREFIX.ldepth.gz 
+mv $NEW_PREFIX.ldepth.gz ./metrics
+rm $NEW_PREFIX.*.ldepth.gz
 
-mv $PREFIX.filterstats ./filtered
+mv $NEW_PREFIX.filterstats ./filtered
 
-echo -e "Filter stats and filtered VCF files stored in $PREFIX.filterstats\n"
+echo -e "Filter stats and filtered VCF files stored in $NEW_PREFIX.filterstats\n"
 echo -e "Both are stored in the filtered directory\n"
 
