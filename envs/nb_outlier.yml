@@ -1,7 +1,0 @@
-name: nb_outlier
-channels:
-  - conda-forge
-  - bioconda
-  - defaults
-prefix: /home/azyck/miniconda3/envs/nb_outlier
-
