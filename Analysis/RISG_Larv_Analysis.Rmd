@@ -1,0 +1,2951 @@
+---
+title: "RISG_Larv_Analysis"
+author: "Amy Zyck"
+date: '2024-12-20'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Setup
+```{r include=TRUE}
+library(reshape2)
+library(ggplot2)
+library(tidyr)
+library(dplyr)
+library(qvalue)
+#library(plyr)
+#library(stringr)
+library(pcadapt)
+library(poolSeq)
+library(ACER)
+library(ggman)
+```
+
+```{r}
+sessionInfo()
+```
+
+## Download Popoolation2 scripts
+```{bash, eval = FALSE}
+git clone https://github.com/ToBoDev/assessPool.git
+```
+
+### Visualize across 10,000 random loci
+
+### Block 2 
+
+```{bash, eval=FALSE}
+mawk '!/CHR/' RISG.Block2.cov.sync | cut -f 1-13 | shuf | shuf | head -q -n 11000 > input.b2.rand.sync 
+
+perl ./assessPool/scripts/p2/snp-frequency-diff.pl --input /home/azyck/RISG_Larval/RISG_ddocent/RISG_Larval_SNPFiltering/input.b2.rand.sync --output-prefix B2.rand --max-coverage 50000 
+
+mawk -f ./scripts/polarize_freqs B2.rand_rc | grep -Ei '(A{10}|C{10}|G{10}|T{10})'| head -q -n 10000| cut -f10-19 | mawk '!/maa/'   > B2.rand.pool
+```
+
+```{r}
+pool.data.B2 <- read.table("B2.rand.pool")
+df.pool.B2 <- apply(pool.data.B2, c(1, 2), function(x) eval(parse(text = x)))
+df_filtered <- df.pool.B2[!apply(df.pool.B2, 1, function(row) all(row == row[1])), ]
+
+pool.data2.B2 <- t(df_filtered)
+filename.B2 <- read.pcadapt(pool.data2.B2, type = "pool")
+
+res.B2.rand <- pcadapt(filename.B2, K =5,min.maf = 0.01)
+
+poplist.names <- c(rep("TL0", 4),rep("CB", 3),rep("HB", 3))
+p1.B2.rand.df <- data.frame(res.B2.rand$scores)
+colnames(p1.B2.rand.df) <- c("PC1","PC2", "PC3", "PC4")
+p1.B2.rand.df$POP <- poplist.names
+ggplot(p1.B2.rand.df, aes(x=PC1, y= PC2, fill= POP)) + geom_point(aes(alpha=0.2), size =10,shape=21, col="black")+  scale_fill_manual(values=c("#56B4E9", "orange","purple"),name="Treatment")+ 
+guides(alpha=FALSE) +theme(axis.title.x = element_text(size = 24),axis.title.y = element_text(size = 24))
+```
+
+### Block 3 
+
+```{bash, eval=FALSE}
+mawk '!/CHR/' RISG.Block3.cov.sync | cut -f 1-13 | shuf | shuf | head -q -n 11000 > input.b3.rand.sync 
+
+perl ./assessPool/scripts/p2/snp-frequency-diff.pl --input /home/azyck/RISG_Larval/RISG_ddocent/RISG_Larval_SNPFiltering/input.b3.rand.sync --output-prefix b3.rand --max-coverage 50000 
+
+mawk -f ./scripts/polarize_freqs b3.rand_rc | grep -Ei '(A{10}|C{10}|G{10}|T{10})'| head -q -n 10000| cut -f10-19 | mawk '!/maa/'   > b3.rand.pool
+```
+
+```{r}
+pool.data.b3 <- read.table("b3.rand.pool")
+df.pool.b3 <- apply(pool.data.b3, c(1, 2), function(x) eval(parse(text = x)))
+df_filtered <- df.pool.b3[!apply(df.pool.b3, 1, function(row) all(row == row[1])), ]
+
+pool.data2.b3 <- t(df_filtered)
+filename.b3 <- read.pcadapt(pool.data2.b3, type = "pool")
+
+res.b3.rand <- pcadapt(filename.b3, K =5,min.maf = 0.01)
+
+poplist.names <- c(rep("TL0", 4),rep("CB", 3),rep("HB", 3))
+p1.b3.rand.df <- data.frame(res.b3.rand$scores)
+colnames(p1.b3.rand.df) <- c("PC1","PC2", "PC3", "PC4")
+p1.b3.rand.df$POP <- poplist.names
+ggplot(p1.b3.rand.df, aes(x=PC1, y= PC2, fill= POP)) + geom_point(aes(alpha=0.2), size =10,shape=21, col="black")+  scale_fill_manual(values=c("#56B4E9", "orange","purple"),name="Treatment")+ 
+guides(alpha=FALSE) +theme(axis.title.x = element_text(size = 24),axis.title.y = element_text(size = 24))
+```
+
+### Block 4 
+
+```{bash, eval=FALSE}
+mawk '!/CHR/' RISG.Block4.cov.sync | cut -f 1-13 | shuf | shuf | head -q -n 11000 > input.b4.rand.sync 
+
+perl ./assessPool/scripts/p2/snp-frequency-diff.pl --input /home/azyck/RISG_Larval/RISG_ddocent/RISG_Larval_SNPFiltering/input.b4.rand.sync --output-prefix b4.rand --max-coverage 50000 
+
+mawk -f ./scripts/polarize_freqs b4.rand_rc | grep -Ei '(A{10}|C{10}|G{10}|T{10})'| head -q -n 10000| cut -f10-19 | mawk '!/maa/'   > b4.rand.pool
+```
+
+```{r}
+pool.data.b4 <- read.table("b4.rand.pool")
+df.pool.b4 <- apply(pool.data.b4, c(1, 2), function(x) eval(parse(text = x)))
+df_filtered <- df.pool.b4[!apply(df.pool.b4, 1, function(row) all(row == row[1])), ]
+
+pool.data2.b4 <- t(df_filtered)
+filename.b4 <- read.pcadapt(pool.data2.b4, type = "pool")
+
+res.b4.rand <- pcadapt(filename.b4, K =5,min.maf = 0.01)
+
+poplist.names <- c(rep("TL0", 4),rep("CB", 3),rep("HB", 3))
+p1.b4.rand.df <- data.frame(res.b4.rand$scores)
+colnames(p1.b4.rand.df) <- c("PC1","PC2", "PC3", "PC4")
+p1.b4.rand.df$POP <- poplist.names
+ggplot(p1.b4.rand.df, aes(x=PC1, y= PC2, fill= POP)) + geom_point(aes(alpha=0.2), size =10,shape=21, col="black")+  scale_fill_manual(values=c("#56B4E9", "orange","purple"),name="Treatment")+ 
+guides(alpha=FALSE) +theme(axis.title.x = element_text(size = 24),axis.title.y = element_text(size = 24))
+```
+
+
+### All blocks
+
+```{bash, eval=FALSE}
+mawk '!/CHR/' RISG.All.Blocks.cov.sync | mawk '$34 > 10' | cut -f 1-33 | shuf -n 50000 | shuf -n 11000  > input.all.rand.sync
+
+perl ./assessPool/scripts/p2/snp-frequency-diff.pl --input input.all.rand.sync --output-prefix all.rand --max-coverage 50000 
+
+mawk -f ./scripts/polarize_freqs all.rand_rc | grep -Ei '(A{20}|C{20}|G{20}|T{20})' -m 10000 | cut -f10-39  > all.rand.pool
+```
+
+```{r}
+pool.data.all <- read.table("all.rand.pool")
+df.pool.all <- apply(pool.data.all, c(1, 2), function(x) eval(parse(text = x)))
+df_filtered.all <- df.pool.all[!apply(df.pool.all, 1, function(row) all(row == row[1])), ]
+
+pool.data2.all <- t(df_filtered.all)
+filename.all <- read.pcadapt(pool.data2.all, type = "pool")
+
+res.all.rand <- pcadapt(filename.all, K =5,min.maf = 0.0001)
+
+poplist.names <- c(rep("B2", 10),rep("B3", 10),rep("B4", 10))
+#poplist.names <- c("B12","B11","B12","B2","B11","B2","B11","B12","B2","B12","B11","B2","B11","B12","B12","B2","B12","B11","B2","B11","B11","B12","B2","B11","B12","B11","B2","B12","B2","B11","B12","B11","B12","B2","B11","B2","B11","B2","B11","B2","B11","B12","B12","B12","B12","B11","B12","B2","B2","B11","B11","B2","B12","B12","B11","B12")
+p1.all.rand.df <- data.frame(res.all.rand$scores)
+colnames(p1.all.rand.df) <- c("PC1","PC2", "PC3", "PC4")
+p1.all.rand.df$POP <- poplist.names
+ggplot(p1.all.rand.df, aes(x=PC1, y= PC2, fill= POP)) + geom_point(aes(alpha=0.2), size =10,shape=21, col="black")+  scale_fill_manual(values=c("green","yellow","blue"),name="Block")+ 
+guides(alpha=FALSE) +theme(axis.title.x = element_text(size = 24),axis.title.y = element_text(size = 24))
+```
+
+### All initial samples
+
+```{bash,eval=FALSE}
+mawk -f ./scripts/polarize_freqs all.rand_rc | grep -Ei '(A{20}|C{20}|G{20}|T{20})' -m 10000 | cut -f10-13,20-23,30-33  > all.T0.rand.pool
+```
+
+```{r}
+pool.data.all.is <- read.table("all.T0.rand.pool")
+df.pool.all.is <- apply(pool.data.all.is, c(1, 2), function(x) eval(parse(text = x)))
+df_filtered.all.is <- df.pool.all.is[!apply(df.pool.all.is, 1, function(row) all(row == row[1])), ]
+
+pool.data2.all.is <- t(df_filtered.all.is)
+filename.all.is <- read.pcadapt(pool.data2.all.is, type = "pool")
+
+res.all.is.rand <- pcadapt(filename.all.is, K =5,min.maf = 0.0001)
+
+poplist.names <- c(rep("B2", 4),rep("B3", 4),rep("B4", 4))
+p1.all.rand.df <- data.frame(res.all.is.rand$scores)
+colnames(p1.all.rand.df) <- c("PC1","PC2", "PC3", "PC4")
+p1.all.rand.df$POP <- poplist.names
+ggplot(p1.all.rand.df, aes(x=PC1, y= PC2, fill= POP)) + geom_point(aes(alpha=0.2), size =10,shape=21, col="black")+  scale_fill_manual(values=c("green","yellow","blue"),name="Block")+ 
+guides(alpha=FALSE) +theme(axis.title.x = element_text(size = 24),axis.title.y = element_text(size = 24))
+```
+
+```{bash, eval=FALSE}
+curl -L -O https://raw.githubusercontent.com/jpuritz/Puritz_etal_CASE/refs/heads/main/scripts/add_cov_sync_IS
+chmod +x add_cov_sync_IS
+```
+
+### Block 2
+
+```{bash, eval=FALSE}
+bash ./scripts/sum.sh <(cut -f1,2,3,4-7 RISG.Block2.cov.sync) > RISG.Block2.TL0.sync
+paste RISG.Block2.TL0.sync <(cut -f4 RISG.Block2.TL0.sync) <(cut -f4 RISG.Block2.TL0.sync)  > RISG.Block2.TL0sum3.sync
+
+AV_COV=$(mawk -f ./scripts/add_cov_sync <(cut -f4-7 --complement RISG.Block2.cov.sync) | mawk '{sum=sum+$15} END {print sum/NR}')
+
+echo $AV_COV
+
+mawk -f ./scripts/add_cov_sync RISG.Block2.TL0sum3.sync | mawk -v x=$AV_COV '$7 >= x' | mawk '!/CHR/' | cut -f1-6 > RISG.Block2.TL0sum3nh.sync
+
+mawk -f ./scripts/add_cov_sync_IS RISG.Block2.TL0sum3.sync | mawk -v x=$AV_COV '$7 >= x' > RISG.Block2.TL0sum3nh.cov.sync
+
+paste RISG.Block2.cov.sync <(mawk -f ./scripts/add_cov_sync RISG.Block2.TL0sum3.sync) | mawk -v x=$AV_COV '$23 >= x' | cut -f1-16 > temp.sync
+
+mv temp.sync RISG.dp20.Block2.COV.sync
+
+#perl ./assessPool/scripts/p2/subsample-synchronized.pl --input RISG.Block2.TL0sum3nh.sync --output RISG.Block2.TL0s.sync --target-coverage 48 --method withoutreplace --max-coverage 10000
+
+mawk -f ./scripts/add_cov_sync <(cut -f4-7,14- --complement RISG.dp20.Block2.COV.sync) > temp.cov
+
+paste temp.cov <(cut -f7 RISG.Block2.TL0sum3nh.cov.sync) | mawk -v OFS='\t' '{if ($12 > $13) {$12=$13; print $0} else {print $0}}' | cut -f1-12> RISG.dp20.Block2.COV
+```
+
+```{bash, eval=FALSE}
+python ./scripts/sub_sample.py RISG.Block2.TL0sum3nh.cov.sync RISG.Block2.TL0sum3nh.sync RISG.Block2.TL0s.sync
+
+cat <(echo -e "CHROM\tPOS\tREF\tTL0_RS1\tTL0_RS2\tTL0_RS3") RISG.Block2.TL0s.sync > RISG.Block2.TL0sum.sync
+
+paste <(cut -f1,2,3,4 RISG.Block2.TL0sum.sync) <(cut -f8 RISG.dp20.Block2.COV.sync) <(cut -f5 RISG.Block2.TL0sum.sync) <(cut -f9 RISG.dp20.Block2.COV.sync) <(cut -f6 RISG.Block2.TL0sum.sync) <(cut -f10 RISG.dp20.Block2.COV.sync)> Con.RISG.B2.sync
+
+head -1 Con.RISG.B2.sync
+
+mawk '!/CHR/' Con.RISG.B2.sync > Con.RISG.B2.input
+tail -n +2 Con.RISG.B2.sync | mawk '!/0:0:0:0:0:0/' > Con2.RISG.B2.input
+
+paste <(cut -f1,2,3,4 RISG.Block2.TL0sum.sync) <(cut -f11 RISG.dp20.Block2.COV.sync) <(cut -f5 RISG.Block2.TL0sum.sync) <(cut -f12 RISG.dp20.Block2.COV.sync) <(cut -f6 RISG.Block2.TL0sum.sync) <(cut -f13 RISG.dp20.Block2.COV.sync)> Hi.RISG.B2.sync
+
+head -1 Hi.RISG.B2.sync
+tail -n +2 Hi.RISG.B2.sync > Hi.RISG.B2.input
+```
+
+
+### Block 3
+
+```{bash, eval=FALSE}
+bash ./scripts/sum.sh <(cut -f1,2,3,4-7 RISG.Block3.cov.sync) > RISG.Block3.TL0.sync
+paste RISG.Block3.TL0.sync <(cut -f4 RISG.Block3.TL0.sync) <(cut -f4 RISG.Block3.TL0.sync)  > RISG.Block3.TL0sum3.sync
+
+AV_COV=$(mawk -f ./scripts/add_cov_sync <(cut -f4-7 --complement RISG.Block3.cov.sync) | mawk '{sum=sum+$15} END {print sum/NR}')
+
+echo $AV_COV
+
+mawk -f ./scripts/add_cov_sync RISG.Block3.TL0sum3.sync | mawk -v x=$AV_COV '$7 >= x' | mawk '!/CHR/' | cut -f1-6 > RISG.Block3.TL0sum3nh.sync
+
+mawk -f ./scripts/add_cov_sync_IS RISG.Block3.TL0sum3.sync | mawk -v x=$AV_COV '$7 >= x' > RISG.Block3.TL0sum3nh.cov.sync
+
+paste RISG.Block3.cov.sync <(mawk -f ./scripts/add_cov_sync RISG.Block3.TL0sum3.sync) | mawk -v x=$AV_COV '$23 >= x' | cut -f1-16 > temp.sync
+
+mv temp.sync RISG.dp20.Block3.COV.sync
+
+#perl ./assessPool/scripts/p2/subsample-synchronized.pl --input RISG.Block3.TL0sum3nh.sync --output RISG.Block3.TL0s.sync --target-coverage 48 --method withoutreplace --max-coverage 10000
+
+mawk -f ./scripts/add_cov_sync <(cut -f4-7,14- --complement RISG.dp20.Block3.COV.sync) > temp.cov
+
+paste temp.cov <(cut -f7 RISG.Block3.TL0sum3nh.cov.sync) | mawk -v OFS='\t' '{if ($12 > $13) {$12=$13; print $0} else {print $0}}' | cut -f1-12> RISG.dp20.Block3.COV
+```
+
+```{bash, eval=FALSE}
+python ./scripts/sub_sample.py RISG.Block3.TL0sum3nh.cov.sync RISG.Block3.TL0sum3nh.sync RISG.Block3.TL0s.sync
+
+cat <(echo -e "CHROM\tPOS\tREF\tTL0_RS1\tTL0_RS2\tTL0_RS3") RISG.Block3.TL0s.sync > RISG.Block3.TL0sum.sync
+
+paste <(cut -f1,2,3,4 RISG.Block3.TL0sum.sync) <(cut -f8 RISG.dp20.Block3.COV.sync) <(cut -f5 RISG.Block3.TL0sum.sync) <(cut -f9 RISG.dp20.Block3.COV.sync) <(cut -f6 RISG.Block3.TL0sum.sync) <(cut -f10 RISG.dp20.Block3.COV.sync)> Con.RISG.B3.sync
+
+head -1 Con.RISG.B3.sync
+
+mawk '!/CHR/' Con.RISG.B3.sync > Con.RISG.B3.input
+tail -n +2 Con.RISG.B3.sync | mawk '!/0:0:0:0:0:0/' > Con2.RISG.B3.input
+
+paste <(cut -f1,2,3,4 RISG.Block3.TL0sum.sync) <(cut -f11 RISG.dp20.Block3.COV.sync) <(cut -f5 RISG.Block3.TL0sum.sync) <(cut -f12 RISG.dp20.Block3.COV.sync) <(cut -f6 RISG.Block3.TL0sum.sync) <(cut -f13 RISG.dp20.Block3.COV.sync)> Hi.RISG.B3.sync
+
+head -1 Hi.RISG.B3.sync
+tail -n +2 Hi.RISG.B3.sync > Hi.RISG.B3.input
+```
+
+
+### Block 4
+
+```{bash, eval=FALSE}
+bash ./scripts/sum.sh <(cut -f1,2,3,4-7 RISG.Block4.cov.sync) > RISG.Block4.TL0.sync
+paste RISG.Block4.TL0.sync <(cut -f4 RISG.Block4.TL0.sync) <(cut -f4 RISG.Block4.TL0.sync)  > RISG.Block4.TL0sum3.sync
+
+AV_COV=$(mawk -f ./scripts/add_cov_sync <(cut -f4-7 --complement RISG.Block4.cov.sync) | mawk '{sum=sum+$15} END {print sum/NR}')
+
+echo $AV_COV
+
+mawk -f ./scripts/add_cov_sync RISG.Block4.TL0sum3.sync | mawk -v x=$AV_COV '$7 >= x' | mawk '!/CHR/' | cut -f1-6 > RISG.Block4.TL0sum3nh.sync
+
+mawk -f ./scripts/add_cov_sync_IS RISG.Block4.TL0sum3.sync | mawk -v x=$AV_COV '$7 >= x' > RISG.Block4.TL0sum3nh.cov.sync
+
+paste RISG.Block4.cov.sync <(mawk -f ./scripts/add_cov_sync RISG.Block4.TL0sum3.sync) | mawk -v x=$AV_COV '$23 >= x' | cut -f1-16 > temp.sync
+
+mv temp.sync RISG.dp20.Block4.COV.sync
+
+#perl ./assessPool/scripts/p2/subsample-synchronized.pl --input RISG.Block4.TL0sum3nh.sync --output RISG.Block4.TL0s.sync --target-coverage 48 --method withoutreplace --max-coverage 10000
+
+mawk -f ./scripts/add_cov_sync <(cut -f4-7,14- --complement RISG.dp20.Block4.COV.sync) > temp.cov
+
+paste temp.cov <(cut -f7 RISG.Block4.TL0sum3nh.cov.sync) | mawk -v OFS='\t' '{if ($12 > $13) {$12=$13; print $0} else {print $0}}' | cut -f1-12> RISG.dp20.Block4.COV
+```
+
+```{bash, eval=FALSE}
+python ./scripts/sub_sample.py RISG.Block4.TL0sum3nh.cov.sync RISG.Block4.TL0sum3nh.sync RISG.Block4.TL0s.sync
+
+cat <(echo -e "CHROM\tPOS\tREF\tTL0_RS1\tTL0_RS2\tTL0_RS3") RISG.Block4.TL0s.sync > RISG.Block4.TL0sum.sync
+
+paste <(cut -f1,2,3,4 RISG.Block4.TL0sum.sync) <(cut -f8 RISG.dp20.Block4.COV.sync) <(cut -f5 RISG.Block4.TL0sum.sync) <(cut -f9 RISG.dp20.Block4.COV.sync) <(cut -f6 RISG.Block4.TL0sum.sync) <(cut -f10 RISG.dp20.Block4.COV.sync)> Con.RISG.B4.sync
+
+head -1 Con.RISG.B4.sync
+
+mawk '!/CHR/' Con.RISG.B4.sync > Con.RISG.B4.input
+tail -n +2 Con.RISG.B4.sync | mawk '!/0:0:0:0:0:0/' > Con2.RISG.B4.input
+
+paste <(cut -f1,2,3,4 RISG.Block4.TL0sum.sync) <(cut -f11 RISG.dp20.Block4.COV.sync) <(cut -f5 RISG.Block4.TL0sum.sync) <(cut -f12 RISG.dp20.Block4.COV.sync) <(cut -f6 RISG.Block4.TL0sum.sync) <(cut -f13 RISG.dp20.Block4.COV.sync)> Hi.RISG.B4.sync
+
+head -1 Hi.RISG.B4.sync
+tail -n +2 Hi.RISG.B4.sync > Hi.RISG.B4.input
+```
+
+
+## Outlier identification
+
+### Calculate P-values
+
+```{r}
+Qvalue_convert <- function(table) {
+
+
+table <- spread(table,GROUP,PVAL)  
+  
+table$CHR <- table$CHROM
+
+table %>% 
+  mutate(CHR = stringr::str_replace(CHR, "NC_035780.1", "1")) %>% 
+  mutate(CHR = stringr::str_replace(CHR, "NC_035781.1", "2")) %>% 
+  mutate(CHR = stringr::str_replace(CHR, "NC_035782.1", "3")) %>% 
+  mutate(CHR = stringr::str_replace(CHR, "NC_035783.1", "4")) %>% 
+  mutate(CHR = stringr::str_replace(CHR, "NC_035784.1", "5")) %>% 
+  mutate(CHR = stringr::str_replace(CHR, "NC_035785.1", "6")) %>% 
+  mutate(CHR = stringr::str_replace(CHR, "NC_035786.1", "7")) %>% 
+  mutate(CHR = stringr::str_replace(CHR, "NC_035787.1", "8")) %>%
+  mutate(CHR = stringr::str_replace(CHR, "NC_035788.1", "9")) %>% 
+  mutate(CHR = stringr::str_replace(CHR, "NC_035789.1", "10"))  -> pp1
+
+pp1 <- unite(pp1, "SNP", c("CHROM","BP"),remove = FALSE)
+
+pp1$CHR <- as.numeric(pp1$CHR)  
+
+# Set pi0=1 to equal Benjamini Hochberg
+pp1$QCon <- qvalue(pp1$PCon, pi0 = 1)$qvalues
+pp1$QHi <- qvalue(pp1$PHi, pi0 = 1)$qvalues
+
+return(pp1)
+}
+
+# Function to determine significant loci in various outpus
+Significat_subset <-function(pv, alpha, alpha2) {
+# Add new logical columns based on conditions
+  pv$Sig.Hi <- pv$QHi < alpha
+  
+  ppsig <- subset(pv, QHi < alpha)
+  ppsig <- subset(ppsig, QCon > alpha2)
+  
+  # Print diagnostics
+  print(nrow(pv))
+  print(nrow(ppsig))
+  print(nrow(ppsig)/nrow(pv))
+  
+  # Return the modified dataframe
+  return(ppsig)
+}
+
+group_and_average <- function(df) {
+  df %>%
+    dplyr::group_by(SNP) %>%
+    dplyr::summarize(
+      # Use a conditional inside across to handle all-NA groups
+      across(
+        c(PCon, PHi, CHR, QCon, QHi), 
+        ~ if (all(is.na(.))) NA else min(., na.rm = TRUE)),
+      # Combine logical columns, retain TRUE if any TRUE exists in the group
+      Sig.Hi = any(Sig.Hi, na.rm = TRUE),
+      CHROM = dplyr::first(CHROM),
+      BP = dplyr::first(BP),
+      BLOCK = dplyr::first(BLOCK),
+      .groups = "drop"  # Ungroup the result
+    )
+}
+```
+
+Using a modified version of the Cochran Mantel Hanzel tests
+
+### Block 2
+
+```{r}
+con.RISG.B2.sync <- read.sync(file="Con2.RISG.B2.input", gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+con.RISG.B2.cov <- poolSeq::coverage(con.RISG.B2.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+con.RISG.B2.af <- af(con.RISG.B2.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+
+con.RISG.B2.pvals <- adapted.cmh.test(freq=con.RISG.B2.af, coverage=con.RISG.B2.cov, Ne=rep(1000, 3), gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3), poolSize=rep(c(40000,10000), ncol(con.RISG.B2.af)/2), MeanStart = TRUE, mincov =20)
+
+pcondf <- as.data.table(cbind(row.names(con.RISG.B2.af),con.RISG.B2.pvals))
+colnames(pcondf) <- c("Locus","PVAL")
+pcondf$GROUP <- "PCon"
+
+hi.RISG.B2.sync <- read.sync(file="Hi.RISG.B2.input", gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+hi.RISG.B2.cov <- poolSeq::coverage(hi.RISG.B2.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+hi.RISG.B2.af <- af(hi.RISG.B2.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+
+hi.RISG.B2.pvals <- adapted.cmh.test(freq=hi.RISG.B2.af, coverage=hi.RISG.B2.cov, Ne=rep(1000, 3), gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3), poolSize=rep(c(40000,10000), ncol(hi.RISG.B2.af)/2), MeanStart = TRUE, mincov =20)
+
+phidf <- as.data.table(cbind(row.names(hi.RISG.B2.af),hi.RISG.B2.pvals))
+colnames(phidf) <- c("Locus","PVAL")
+phidf$GROUP <- "PHi"
+
+RISG.B2.pval.table <- bind_rows(pcondf,phidf)
+RISG.B2.pval.table <- RISG.B2.pval.table %>%
+  separate(Locus, into = c("CHROM", "BP"), sep = "\\.(?=[^.]+$)")
+RISG.B2.pval.table$PVAL <- as.numeric(RISG.B2.pval.table$PVAL)
+```
+
+### Block 3
+
+```{r}
+con.RISG.B3.sync <- read.sync(file="Con2.RISG.B3.input", gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+con.RISG.B3.cov <- poolSeq::coverage(con.RISG.B3.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+con.RISG.B3.af <- af(con.RISG.B3.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+
+con.RISG.B3.pvals <- adapted.cmh.test(freq=con.RISG.B3.af, coverage=con.RISG.B3.cov, Ne=rep(1000, 3), gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3), poolSize=rep(c(40000,10000), ncol(con.RISG.B3.af)/2), MeanStart = TRUE, mincov =20)
+
+pcondf <- as.data.table(cbind(row.names(con.RISG.B3.af),con.RISG.B3.pvals))
+colnames(pcondf) <- c("Locus","PVAL")
+pcondf$GROUP <- "PCon"
+
+hi.RISG.B3.sync <- read.sync(file="Hi.RISG.B3.input", gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+hi.RISG.B3.cov <- poolSeq::coverage(hi.RISG.B3.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+hi.RISG.B3.af <- af(hi.RISG.B3.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+
+hi.RISG.B3.pvals <- adapted.cmh.test(freq=hi.RISG.B3.af, coverage=hi.RISG.B3.cov, Ne=rep(1000, 3), gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3), poolSize=rep(c(40000,10000), ncol(hi.RISG.B3.af)/2), MeanStart = TRUE, mincov =20)
+
+phidf <- as.data.table(cbind(row.names(hi.RISG.B3.af),hi.RISG.B3.pvals))
+colnames(phidf) <- c("Locus","PVAL")
+phidf$GROUP <- "PHi"
+
+RISG.B3.pval.table <- bind_rows(pcondf,phidf)
+RISG.B3.pval.table <- RISG.B3.pval.table %>%
+  separate(Locus, into = c("CHROM", "BP"), sep = "\\.(?=[^.]+$)")
+RISG.B3.pval.table$PVAL <- as.numeric(RISG.B3.pval.table$PVAL)
+```
+
+
+### Block 4
+
+```{r}
+con.RISG.B4.sync <- read.sync(file="Con2.RISG.B4.input", gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+con.RISG.B4.cov <- poolSeq::coverage(con.RISG.B4.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+con.RISG.B4.af <- af(con.RISG.B4.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+
+con.RISG.B4.pvals <- adapted.cmh.test(freq=con.RISG.B4.af, coverage=con.RISG.B4.cov, Ne=rep(1000, 3), gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3), poolSize=rep(c(40000,10000), ncol(con.RISG.B4.af)/2), MeanStart = TRUE, mincov =20)
+
+pcondf <- as.data.table(cbind(row.names(con.RISG.B4.af),con.RISG.B4.pvals))
+colnames(pcondf) <- c("Locus","PVAL")
+pcondf$GROUP <- "PCon"
+
+hi.RISG.B4.sync <- read.sync(file="Hi.RISG.B4.input", gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+hi.RISG.B4.cov <- poolSeq::coverage(hi.RISG.B4.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+hi.RISG.B4.af <- af(hi.RISG.B4.sync,gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3))
+
+hi.RISG.B4.pvals <- adapted.cmh.test(freq=hi.RISG.B4.af, coverage=hi.RISG.B4.cov, Ne=rep(1000, 3), gen=c(0, 1, 0, 1, 0, 1), repl=c(1, 1, 2, 2, 3,3), poolSize=rep(c(40000,10000), ncol(hi.RISG.B4.af)/2), MeanStart = TRUE, mincov =20)
+
+phidf <- as.data.table(cbind(row.names(hi.RISG.B4.af),hi.RISG.B4.pvals))
+colnames(phidf) <- c("Locus","PVAL")
+phidf$GROUP <- "PHi"
+
+RISG.B4.pval.table <- bind_rows(pcondf,phidf)
+RISG.B4.pval.table <- RISG.B4.pval.table %>%
+  separate(Locus, into = c("CHROM", "BP"), sep = "\\.(?=[^.]+$)")
+RISG.B4.pval.table$PVAL <- as.numeric(RISG.B4.pval.table$PVAL)
+```
+
+```{r}
+Qvalue_convert(RISG.B2.pval.table) ->B2.pv
+Qvalue_convert(RISG.B3.pval.table) ->B3.pv
+Qvalue_convert(RISG.B4.pval.table) ->B4.pv
+```
+
+```{r}
+pp1 <- rbind(B2.pv,B3.pv,B4.pv)
+```
+
+```{r}
+alpha = 0.1
+alpha2 = 0.1
+
+
+ppsig.B2.1 <- Significat_subset(B2.pv,alpha,alpha2)
+
+ppsig.B3.1 <- Significat_subset(B3.pv,alpha,alpha2)
+
+ppsig.B4.1 <- Significat_subset(B4.pv,alpha,alpha2)
+```
+
+```{r}
+ppsig.B2.1$BLOCK <- 2
+ppsig.B3.1$BLOCK <- 3
+ppsig.B4.1$BLOCK <- 4
+
+ppsig3.FDR10 <- bind_rows(ppsig.B2.1,ppsig.B3.1,ppsig.B4.1)
+
+write.table(ppsig3.FDR10, "Sig.Loci.FDR10", sep="\t", row.names = FALSE, quote = FALSE)
+```
+
+
+```{r}
+alpha = 0.05
+alpha.B3 = alpha * 2
+alpha2 = 0.1
+
+
+ppsig.B2.05 <- Significat_subset(B2.pv,alpha,alpha2)
+
+ppsig.B3.05 <- Significat_subset(B3.pv,alpha.B3,alpha2)
+
+ppsig.B4.05 <- Significat_subset(B4.pv,alpha,alpha2)
+```
+
+
+```{r}
+ppsig.B2.05$BLOCK <- 2
+ppsig.B3.05$BLOCK <- 3
+ppsig.B4.05$BLOCK <- 4
+
+ppsig3.FDR05 <- bind_rows(ppsig.B2.05,ppsig.B3.05,ppsig.B4.05)
+
+write.table(ppsig3.FDR05, "Sig.Loci.FDR05", sep="\t", row.names = FALSE, quote = FALSE)
+```
+
+
+```{r}
+alpha = 0.01
+alpha.B3 = alpha * 2
+alpha2 = 0.1
+
+
+ppsig.B2.01 <- Significat_subset(B2.pv,alpha,alpha2)
+
+ppsig.B3.01 <- Significat_subset(B3.pv,alpha.B3,alpha2)
+
+ppsig.B4.01 <- Significat_subset(B4.pv,alpha,alpha2)
+```
+
+
+```{r}
+conpp1 <- subset(pp1, QCon < alpha)
+
+ppsig.B2.01$BLOCK <- 2
+ppsig.B3.01$BLOCK <- 3
+ppsig.B4.01$BLOCK <- 4
+
+ppsig3.FDR01 <- bind_rows(ppsig.B2.01,ppsig.B3.01,ppsig.B4.01)
+
+write.table(ppsig3.FDR01, "Sig.Loci.FDR01", sep="\t", row.names = FALSE, quote = FALSE)
+write.table(ppsig.B2.01, "Sig.Loci.FDR01.Block2", sep="\t", row.names = FALSE, quote = FALSE)
+write.table(ppsig.B3.01, "Sig.Loci.FDR01.Block3", sep="\t", row.names = FALSE, quote = FALSE)
+write.table(ppsig.B4.01, "Sig.Loci.FDR01.Block4", sep="\t", row.names = FALSE, quote = FALSE)
+```
+
+## Repeating across all blocks
+
+```{bash, eval=FALSE}
+# Extract the TL0 samples and add coverage stats
+bash ./scripts/sum.sh <(cut -f1,2,3,4,5,6,7 RISG.All.Blocks.cov.sync) > RISG.B2.AB.TL0sum.sync
+bash ./scripts/sum.sh <(cut -f1,2,3,14,15,16,17 RISG.All.Blocks.cov.sync) > RISG.B3.AB.TL0sum.sync
+bash ./scripts/sum.sh <(cut -f1,2,3,24,25,26,27 RISG.All.Blocks.cov.sync) > RISG.B4.AB.TL0sum.sync
+
+# Pull out the min.cov column from each Block's initial samples and combine with the full file
+# Filter each TL0 min.cov column, retaining min coverage greater than 72 and overall min coverage greater than 1. Save the original sample file columns.  
+paste RISG.All.Blocks.cov.sync <(mawk -f ./scripts/add_cov_sync RISG.B2.AB.TL0sum.sync | cut -f5 ) <(mawk -f ./scripts/add_cov_sync RISG.B3.AB.TL0sum.sync | cut -f5) <(mawk -f ./scripts/add_cov_sync RISG.B4.AB.TL0sum.sync | cut -f5) | mawk '$37 >72 && $38 > 72 && $39 > 72 && $34 > 1' | cut -f1-36 > RISG.All.Blocks.cov.fil.sync
+
+# Save the initial samples from this newly filtered file
+bash ./scripts/sum.sh <(cut -f1,2,3,4,5,6,7 RISG.All.Blocks.cov.fil.sync) > RISG.B2.AB.TL0sum.sync
+bash ./scripts/sum.sh <(cut -f1,2,3,14,15,16,17 RISG.All.Blocks.cov.fil.sync) > RISG.B3.AB.TL0sum.sync
+bash ./scripts/sum.sh <(cut -f1,2,3,24,25,26,27 RISG.All.Blocks.cov.fil.sync) > RISG.B4.AB.TL0sum.sync
+
+# Save all final samples from this newly filtered file
+mawk -f ./scripts/add_cov_sync <(cut -f1-3,8-13 RISG.All.Blocks.cov.fil.sync ) > B2.AB.cov.sync
+mawk -f ./scripts/add_cov_sync <(cut -f1-3,18-23 RISG.All.Blocks.cov.fil.sync) > B3.AB.cov.sync
+mawk -f ./scripts/add_cov_sync <(cut -f1-3,28-33 RISG.All.Blocks.cov.fil.sync) > B4.AB.cov.sync
+
+# replicate TL0 file three times, one per treatment replicate
+paste RISG.B2.AB.TL0sum.sync <(cut -f4 RISG.B2.AB.TL0sum.sync) <(cut -f4 RISG.B2.AB.TL0sum.sync)  > RISG.B2.AB.TL0sum3.sync
+
+paste RISG.B3.AB.TL0sum.sync <(cut -f4 RISG.B3.AB.TL0sum.sync) <(cut -f4 RISG.B3.AB.TL0sum.sync)  > RISG.B3.AB.TL0sum3.sync
+
+paste RISG.B4.AB.TL0sum.sync <(cut -f4 RISG.B4.AB.TL0sum.sync) <(cut -f4 RISG.B4.AB.TL0sum.sync)  > RISG.B4.AB.TL0sum3.sync
+
+mawk -f ./scripts/add_cov_sync_IS RISG.B2.AB.TL0sum3.sync  > RISG.B2.AB.TL0sum3.cov.sync
+mawk -f ./scripts/add_cov_sync_IS RISG.B3.AB.TL0sum3.sync  > RISG.B3.AB.TL0sum3.cov.sync
+mawk -f ./scripts/add_cov_sync_IS RISG.B4.AB.TL0sum3.sync  > RISG.B4.AB.TL0sum3.cov.sync
+
+paste B2.AB.cov.sync <(cut -f7 RISG.B2.AB.TL0sum3.cov.sync) | mawk -v OFS='\t' '{if (NR > 1 && $12 > $13) {$12=$13; print $0} else {print $0}}' > temp.cov.sync
+cut -f1-12 temp.cov.sync > B2.AB.cov.sync
+
+paste B3.AB.cov.sync <(cut -f7 RISG.B3.AB.TL0sum3.cov.sync) | mawk -v OFS='\t' '{if (NR > 1 && $12 > $13) {$12=$13; print $0} else {print $0}}' > temp.cov.sync
+cut -f1-12 temp.cov.sync > B3.AB.cov.sync
+
+paste B4.AB.cov.sync <(cut -f7 RISG.B4.AB.TL0sum3.cov.sync) | mawk -v OFS='\t' '{if (NR > 1 && $12 > $13) {$12=$13; print $0} else {print $0}}' > temp.cov.sync
+cut -f1-12 temp.cov.sync > B4.AB.cov.sync
+rm temp.cov.sync
+```
+
+
+```{bash, eval=FALSE}
+python ./scripts/sub_sample.py RISG.B2.AB.TL0sum3.cov.sync <( mawk '!/CHR/' RISG.B2.AB.TL0sum3.sync) RISG.B2.TL0s.AB.sync
+python ./scripts/sub_sample.py RISG.B3.AB.TL0sum3.cov.sync <( mawk '!/CHR/' RISG.B3.AB.TL0sum3.sync) RISG.B3.TL0s.AB.sync
+python ./scripts/sub_sample.py RISG.B4.AB.TL0sum3.cov.sync <(mawk '!/CHR/' RISG.B4.AB.TL0sum3.sync) RISG.B4.TL0s.AB.sync
+
+wait 
+
+cat <(echo -e "CHROM\tPOS\tREF\tISB2_RS1\tISB2_RS2\tISB2_RS3") RISG.B2.TL0s.AB.sync > RISG.B2.TL0sum.AB.sync
+cat <(echo -e "CHROM\tPOS\tREF\tISB3_RS1\tISB3_RS2\tISB3_RS3") RISG.B3.TL0s.AB.sync > RISG.B3.TL0sum.AB.sync
+cat <(echo -e "CHROM\tPOS\tREF\tISB4_RS1\tISB4_RS2\tISB4_RS3") RISG.B4.TL0s.AB.sync > RISG.B4.TL0sum.AB.sync
+```
+
+```{bash, eval=FALSE}
+paste <(cut -f1-4 RISG.B2.TL0sum.AB.sync) <(cut -f8 RISG.All.Blocks.cov.fil.sync) <(cut -f5 RISG.B2.TL0sum.AB.sync) <(cut -f9 RISG.All.Blocks.cov.fil.sync) <(cut -f6 RISG.B2.TL0sum.AB.sync) <(cut -f10 RISG.All.Blocks.cov.fil.sync) <(cut -f4 RISG.B3.TL0sum.AB.sync) <(cut -f18 RISG.All.Blocks.cov.fil.sync) <(cut -f5 RISG.B3.TL0sum.AB.sync) <(cut -f19 RISG.All.Blocks.cov.fil.sync) <(cut -f6 RISG.B3.TL0sum.AB.sync) <(cut -f20 RISG.All.Blocks.cov.fil.sync) <(cut -f4 RISG.B4.TL0sum.AB.sync) <(cut -f28 RISG.All.Blocks.cov.fil.sync) <(cut -f5 RISG.B4.TL0sum.AB.sync) <(cut -f29 RISG.All.Blocks.cov.fil.sync) <(cut -f6 RISG.B4.TL0sum.AB.sync) <(cut -f30 RISG.All.Blocks.cov.fil.sync) > Con.AB.sync
+
+# Removing rows with NAs - found when calculating allele freq.
+tail -n +2 Con.AB.sync | mawk '$2 != 5850793' > Con.AB.input
+
+paste <(cut -f1-4 RISG.B2.TL0sum.AB.sync) <(cut -f11 RISG.All.Blocks.cov.fil.sync) <(cut -f5 RISG.B2.TL0sum.AB.sync) <(cut -f12 RISG.All.Blocks.cov.fil.sync) <(cut -f6 RISG.B2.TL0sum.AB.sync) <(cut -f13 RISG.All.Blocks.cov.fil.sync) <(cut -f4 RISG.B3.TL0sum.AB.sync) <(cut -f21 RISG.All.Blocks.cov.fil.sync) <(cut -f5 RISG.B3.TL0sum.AB.sync) <(cut -f22 RISG.All.Blocks.cov.fil.sync) <(cut -f6 RISG.B3.TL0sum.AB.sync) <(cut -f23 RISG.All.Blocks.cov.fil.sync) <(cut -f4 RISG.B4.TL0sum.AB.sync) <(cut -f31 RISG.All.Blocks.cov.fil.sync) <(cut -f5 RISG.B4.TL0sum.AB.sync) <(cut -f32 RISG.All.Blocks.cov.fil.sync) <(cut -f6 RISG.B4.TL0sum.AB.sync) <(cut -f33 RISG.All.Blocks.cov.fil.sync) > Hi.AB.sync
+
+tail -n +2 Hi.AB.sync | mawk '$2 != 7310884 && $2 != 25363715' > Hi.AB.input 
+```
+
+```{r}
+con.ab.sync <- read.sync(file="Con.AB.input", gen=c(0, 1, 0, 1, 0, 1, 0, 1,0,1,0,1,0,1,0,1,0,1), repl=c(1, 1, 2, 2, 3, 3, 4 , 4,5,5,6,6,7,7,8,8,9,9 ))
+con.ab.cov <- poolSeq::coverage(con.ab.sync,gen=c(0, 1, 0, 1, 0, 1, 0, 1,0,1,0,1,0,1,0,1,0,1), repl=c(1, 1, 2, 2, 3, 3, 4 , 4,5,5,6,6,7,7,8,8,9,9 ))
+con.ab.af <- poolSeq::af(con.ab.sync,gen=c(0, 1, 0, 1, 0, 1, 0, 1,0,1,0,1,0,1,0,1,0,1), repl=c(1, 1, 2, 2, 3, 3, 4 , 4,5,5,6,6,7,7,8,8,9,9))
+
+con.ab.pvals <- adapted.cmh.test(freq=con.ab.af, coverage=con.ab.cov, Ne=c(1000,1000,1000,1000,1000,1000,1000,1000,1000), gen=c(0, 1, 0, 1, 0, 1, 0, 1,0,1,0,1,0,1,0,1,0,1), repl=c(1,1,2,2,3,3,4, 4,5,5,6,6,7,7,8,8,9,9), poolSize=rep(c(40000,10000), ncol(con.ab.af)/2), MeanStart = TRUE, mincov =14)
+
+pcondf <- as.data.table(cbind(row.names(con.ab.af),con.ab.pvals))
+colnames(pcondf) <- c("Locus","PVAL")
+pcondf$GROUP <- "PCon"
+
+hi.ab.sync <- read.sync(file="Hi.AB.input", gen=c(0, 1, 0, 1, 0, 1, 0, 1,0,1,0,1,0,1,0,1,0,1), repl=c(1, 1, 2, 2, 3, 3, 4 , 4,5,5,6,6,7,7,8,8,9,9 ))
+hi.ab.cov <- poolSeq::coverage(hi.ab.sync,gen=c(0, 1, 0, 1, 0, 1, 0, 1,0,1,0,1,0,1,0,1,0,1), repl=c(1, 1, 2, 2, 3, 3, 4 , 4,5,5,6,6,7,7,8,8,9,9 ))
+hi.ab.af <- af(hi.ab.sync,gen=c(0, 1, 0, 1, 0, 1, 0, 1,0,1,0,1,0,1,0,1,0,1), repl=c(1, 1, 2, 2, 3, 3, 4 , 4,5,5,6,6,7,7,8,8,9,9 ))
+
+hi.ab.pvals <- adapted.cmh.test(freq=hi.ab.af, coverage=hi.ab.cov, Ne=c(1000,1000,1000,1000,1000,1000,1000,1000,1000), gen=c(0, 1, 0, 1, 0, 1, 0, 1,0,1,0,1,0,1,0,1,0,1), repl=c(1, 1, 2, 2, 3, 3, 4 , 4,5,5,6,6,7,7,8,8,9,9 ), poolSize=rep(c(40000,10000), ncol(hi.ab.af)/2), MeanStart = TRUE, mincov =14)
+
+phidf <- as.data.table(cbind(row.names(hi.ab.af),hi.ab.pvals))
+colnames(phidf) <- c("Locus","PVAL")
+phidf$GROUP <- "PHi"
+```
+
+```{r}
+AB.pval.table <- bind_rows(pcondf,phidf)
+AB.pval.table <- AB.pval.table %>%
+  separate(Locus, into = c("CHROM", "BP"), sep = "\\.(?=[^.]+$)")
+AB.pval.table$PVAL <- as.numeric(AB.pval.table$PVAL)
+```
+
+```{r}
+Qvalue_convert(AB.pval.table) -> AB.pv
+```
+
+```{r}
+alpha = 0.01
+alpha2 =0.1
+
+ppsig.AB <- Significat_subset(AB.pv,alpha,alpha2)
+```
+
+```{r}
+write.table(ppsig.AB, "Sig.Loci.FDR01.AB", sep="\t", row.names = FALSE, quote = FALSE)
+
+conpp.AB <- subset(AB.pv, QCon < 0.001)
+all_con <- bind_rows(conpp1,conpp.AB) %>% group_by(SNP) %>% filter(n()>1)
+
+all_con <- subset(all_con, QCon / QHi < 10)
+
+write.table(all_con, "ALL.CON.SNPS", sep="\t", row.names = FALSE, quote = FALSE)
+
+ppsig.AB$BLOCK <- 10
+```
+
+```{r}
+total.sig <- anti_join(bind_rows(ppsig.AB,ppsig3.FDR01),all_con, by = "SNP")
+
+write.table(total.sig, "Total.Significant.uf.Loci", sep="\t", row.names = FALSE, quote = FALSE)
+```
+
+```{bash, eval=FALSE}
+cut -f2,3 Total.Significant.uf.Loci | tail -n +2 | sort -k1,2 | uniq | mawk '{print $1 "\t" $2-1 "\t" $2}' | bedtools sort -i - > RISG.Total.Significant.uf.loci.bed
+
+cut -f2,3 ALL.CON.SNPS | tail -n +2 | sort -k1,2 | uniq | mawk '{print $1 "\t" $2-1 "\t" $2}' | bedtools sort -i - > ALL.CON.SNPS.loci.bed
+
+bedtools intersect -wb -a  ALL.CON.SNPS.loci.bed -b sorted.ref3.0.gene.bed | grep -oh "gene=LOC.*;g" | sed 's/gene=//g' | sed 's/;g//g' | sort | uniq > CON.LOCI
+
+bedtools intersect -wb -a ALL.CON.SNPS.loci.bed -b sorted.ref3.0.gene.bed | cut -f4- | bedtools sort | bedtools merge > con.loci.filter.bed
+
+cat <(echo -e "SNP\tCHROM\tBP") <(bedtools intersect -a RISG.Total.Significant.uf.loci.bed -b con.loci.filter.bed | mawk '{print $1"_"$3"\t"$1"\t"$3}') > ToFilter.Con.Loci.txt
+```
+
+```{r}
+con_filter <- read.table("ToFilter.Con.Loci.txt",header=TRUE)
+
+total.sig <- unique(anti_join(total.sig,con_filter, by = "SNP"))
+
+write.table(total.sig, "Total.Significant.Loci", sep="\t", row.names = FALSE, quote = FALSE)
+
+
+grouped_total.sig <- group_and_average(total.sig)
+
+write.table(grouped_total.sig, "Total.Significant.Grouped.Loci", sep="\t", row.names = FALSE, quote = FALSE)
+```
+
+### Genes for significant loci
+
+```{bash, eval=FALSE}
+cut -f2,3 Total.Significant.Loci | tail -n +2 | sort -k1,2 | uniq | mawk '{print $1 "\t" $2-1 "\t" $2}' | bedtools sort -i - > RISG.Total.Significant.loci.bed
+bedtools slop -b 100 -i RISG.Total.Significant.loci.bed  -g ../reference.fasta.fai  | bedtools merge -i - >  RISG.Total.Significant.loci.intervals.bed
+
+bedtools intersect -wb -a RISG.Total.Significant.loci.bed -b sorted.ref3.0.gene.bed | grep -oh "gene=LOC.*;g" | sed 's/gene=//g' | sed 's/;g//g' | sort | uniq > Sig.loci.TOTAL.RISG.LOC
+```
+
+## PCA of candidate loci 
+
+```{bash, eval=FALSE}
+bcftools view --threads 40 B2.RISG.vcf.gz -R <(cut -f2,3 Total.Significant.Loci | tail -n +2 | sort | uniq )| mawk '!/\.:\.:\./' > B2.total.outlier.RISG.dp20.vcf &
+
+bcftools view --threads 40 B3.RISG.vcf.gz -R <(cut -f2,3 Total.Significant.Loci | tail -n +2 | sort | uniq )| mawk '!/\.:\.:\./' > B3.total.outlier.RISG.dp20.vcf &
+
+bcftools view --threads 40 B4.RISG.vcf.gz -R <(cut -f2,3 Total.Significant.Loci | tail -n +2 | sort | uniq )| mawk '!/\.:\.:\./' > B4.total.outlier.RISG.dp20.vcf &
+
+bcftools view --threads 40 RISGTRSdp20g75nDNA.FIL.recode.vcf.gz -R <(cut -f2,3 Total.Significant.Loci | tail -n +2 | sort | uniq )| mawk '!/\.:\.:\./' > total.outlier.RISG.dp20.vcf 
+
+wait
+
+python2 VCFtoPopPool.py B2.total.outlier.RISG.dp20.vcf B2.total.outlier.sync
+python2 VCFtoPopPool.py B3.total.outlier.RISG.dp20.vcf B3.total.outlier.sync
+python2 VCFtoPopPool.py B4.total.outlier.RISG.dp20.vcf B4.total.outlier.sync 
+
+python2 VCFtoPopPool.py total.outlier.RISG.dp20.vcf AB.total.outlier.sync
+
+
+mawk '!/CHR/' AB.total.outlier.sync > AB.total.outlier.input
+mawk '!/CHR/' B2.total.outlier.sync > B2.total.outlier.input
+mawk '!/CHR/' B3.total.outlier.sync > B3.total.outlier.input
+mawk '!/CHR/' B4.total.outlier.sync > B4.total.outlier.input
+```
+
+```{bash, eval=FALSE}
+./assessPool/scripts/p2/snp-frequency-diff.pl --input  B2.total.outlier.input --min-count 1 --min-coverage 1 --output-prefix B2.total.outlier --max-coverage 50000 &
+
+./assessPool/scripts/p2/snp-frequency-diff.pl --input  B3.total.outlier.input --min-count 1 --min-coverage 1 --output-prefix B3.total.outlier --max-coverage 50000 &
+
+./assessPool/scripts/p2/snp-frequency-diff.pl --input  B4.total.outlier.input --min-count 1 --min-coverage 1 --output-prefix B4.total.outlier --max-coverage 50000 &
+
+./assessPool/scripts/p2/snp-frequency-diff.pl --input  AB.total.outlier.input --min-count 1 --min-coverage 1 --output-prefix AB.total.outlier --max-coverage 50000 
+```
+
+```{bash, eval=FALSE}
+mawk -f ./scripts/polarize_freqs AB.total.outlier_rc | cut -f10-39 | mawk '!/maa/' > AB.total.outlier.RISG.dp20.pool
+
+mawk -f ./scripts/polarize_freqs B2.total.outlier_rc | cut -f10-19 | mawk '!/maa/' > B2.total.outlier.RISG.dp20.pool
+
+mawk -f ./scripts/polarize_freqs B3.total.outlier_rc | cut -f10-19 | mawk '!/maa/' > B3.total.outlier.RISG.dp20.pool
+
+mawk -f ./scripts/polarize_freqs B4.total.outlier_rc | cut -f10-19 | mawk '!/maa/' > B4.total.outlier.RISG.dp20.pool
+```
+
+```{r}
+pool.data <- read.table("AB.total.outlier.RISG.dp20.pool")
+pool.data.b2 <- read.table("B2.total.outlier.RISG.dp20.pool")
+pool.data.b3 <- read.table("B3.total.outlier.RISG.dp20.pool")
+pool.data.b4 <- read.table("B4.total.outlier.RISG.dp20.pool")
+
+df.pool <- apply(pool.data, c(1, 2), function(x) eval(parse(text = x)))
+df.pool.b2 <- apply(pool.data.b2, c(1, 2), function(x) eval(parse(text = x)))
+df.pool.b3 <- apply(pool.data.b3, c(1, 2), function(x) eval(parse(text = x)))
+df.pool.b4 <- apply(pool.data.b4, c(1, 2), function(x) eval(parse(text = x)))
+
+pool.data2 <- t(df.pool)
+pool.data2.b2 <- t(df.pool.b2)
+pool.data2.b3 <- t(df.pool.b3)
+pool.data2.b4 <- t(df.pool.b4)
+
+filename <- read.pcadapt(pool.data2, type = "pool")
+res <- pcadapt(filename, min.maf = 0.1)
+
+filename.b2 <- read.pcadapt(pool.data2.b2, type = "pool")
+res.b2 <- pcadapt(filename.b2)
+
+filename.b3 <- read.pcadapt(pool.data2.b3, type = "pool")
+res.b3 <- pcadapt(filename.b3)
+
+filename.b4 <- read.pcadapt(pool.data2.b4, type = "pool")
+res.b4 <- pcadapt(filename.b4)
+```
+
+## All significant loci 
+
+```{r}
+par(mfrow = c(2, 2))
+for (i in 1:4)
+  plot(res$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```
+
+```{r}
+plot(res,option="screeplot")
+```
+
+```{r}
+res <- pcadapt(filename, K =4,min.maf = 0.001)
+poplist.names <- factor(c("Initial","Initial","Initial","Initial","Control","Control","Control","Stress","Stress","Stress","Initial","Initial","Initial","Initial","Control","Control","Control","Stress","Stress","Stress","Initial","Initial","Initial","Initial","Control","Control","Control","Stress","Stress","Stress"), levels = c("Initial","Control","Stress"))
+p1 <- plot(res, option = "scores", i = 1, j = 2, pop = poplist.names,
+           col = c("purple", "#56B4E9", "orange"))
+
+pve <- res$singular.values^2 / sum(res$singular.values^2)
+
+p1 + xlab(paste0("PC1 (", round(pve[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("All_cand_loci_PCA.pdf", width = 7, height = 6, units = "in")
+```
+
+```{r}
+poplist.names <- c(rep("Block2", 10),rep("Block3", 10),rep("Block4", 10))
+p1 <- plot(res, option = "scores", i = 1, j = 2, pop = poplist.names, col = c("#CC79A7", "#009E73", "#0072B2"))
+
+p1 + xlab(paste0("PC1 (", round(pve[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("All_cand_loci_PCA_byBlock.pdf", width = 7, height = 6, units = "in")
+```
+
+## Neutral loci 
+
+```{bash, eval=FALSE}
+cut -f2,3 Total.Significant.Loci | tail -n +2 | sort | uniq | awk '{print $1"\t"$2-1"\t"$2}' > exclude_positions.bed
+```
+
+```{bash, eval=FALSE}
+bcftools view --threads 40 B2.RISG.vcf.gz -T ^exclude_positions.bed | mawk '!/\.:\.:\./' > B2.total.neutral.RISG.dp20.vcf
+
+bcftools view --threads 40 B3.RISG.vcf.gz -T ^exclude_positions.bed | mawk '!/\.:\.:\./' > B3.total.neutral.RISG.dp20.vcf
+
+bcftools view --threads 40 B4.RISG.vcf.gz -T ^exclude_positions.bed | mawk '!/\.:\.:\./' > B4.total.neutral.RISG.dp20.vcf
+
+bcftools view --threads 40 RISGTRSdp20g75nDNA.FIL.recode.vcf.gz -T ^exclude_positions.bed | mawk '!/\.:\.:\./' > total.neutral.RISG.dp20.vcf 
+
+wait
+
+python2 VCFtoPopPool.py B2.total.neutral.RISG.dp20.vcf B2.total.neutral.sync
+python2 VCFtoPopPool.py B3.total.neutral.RISG.dp20.vcf B3.total.neutral.sync
+python2 VCFtoPopPool.py B4.total.neutral.RISG.dp20.vcf B4.total.neutral.sync 
+
+python2 VCFtoPopPool.py total.neutral.RISG.dp20.vcf AB.total.neutral.sync
+
+
+mawk '!/CHR/' AB.total.neutral.sync > AB.total.neutral.input
+mawk '!/CHR/' B2.total.neutral.sync > B2.total.neutral.input
+mawk '!/CHR/' B3.total.neutral.sync > B3.total.neutral.input
+mawk '!/CHR/' B4.total.neutral.sync > B4.total.neutral.input
+```
+
+```{bash, eval=FALSE}
+./assessPool/scripts/p2/snp-frequency-diff.pl --input  B2.total.neutral.input --min-count 1 --min-coverage 1 --output-prefix B2.total.neutral --max-coverage 50000 &
+
+./assessPool/scripts/p2/snp-frequency-diff.pl --input  B3.total.neutral.input --min-count 1 --min-coverage 1 --output-prefix B3.total.neutral --max-coverage 50000 &
+
+./assessPool/scripts/p2/snp-frequency-diff.pl --input  B4.total.neutral.input --min-count 1 --min-coverage 1 --output-prefix B4.total.neutral --max-coverage 50000 &
+
+./assessPool/scripts/p2/snp-frequency-diff.pl --input  AB.total.neutral.input --min-count 1 --min-coverage 1 --output-prefix AB.total.neutral --max-coverage 50000 
+```
+
+```{bash, eval=FALSE}
+mawk -f ./scripts/polarize_freqs AB.total.neutral_rc | cut -f10-39 | mawk '!/maa/' > AB.total.neutral.RISG.dp20.pool
+
+mawk -f ./scripts/polarize_freqs B2.total.neutral_rc | cut -f10-19 | mawk '!/maa/' > B2.total.neutral.RISG.dp20.pool
+
+mawk -f ./scripts/polarize_freqs B3.total.neutral_rc | cut -f10-19 | mawk '!/maa/' > B3.total.neutral.RISG.dp20.pool
+
+mawk -f ./scripts/polarize_freqs B4.total.neutral_rc | cut -f10-19 | mawk '!/maa/' > B4.total.neutral.RISG.dp20.pool
+```
+
+```{r}
+pool.data.neut <- read.table("AB.total.neutral.RISG.dp20.pool")
+pool.data.neut.b2 <- read.table("B2.total.neutral.RISG.dp20.pool")
+pool.data.neut.b3 <- read.table("B3.total.neutral.RISG.dp20.pool")
+pool.data.neut.b4 <- read.table("B4.total.neutral.RISG.dp20.pool")
+
+df.pool.neut <- apply(pool.data.neut, c(1, 2), function(x) eval(parse(text = x)))
+df.pool.neut.b2 <- apply(pool.data.neut.b2, c(1, 2), function(x) eval(parse(text = x)))
+df.pool.neut.b3 <- apply(pool.data.neut.b3, c(1, 2), function(x) eval(parse(text = x)))
+df.pool.neut.b4 <- apply(pool.data.neut.b4, c(1, 2), function(x) eval(parse(text = x)))
+
+pool.data.neut2 <- t(df.pool.neut)
+pool.data.neut2.b2 <- t(df.pool.neut.b2)
+pool.data.neut2.b3 <- t(df.pool.neut.b3)
+pool.data.neut2.b4 <- t(df.pool.neut.b4)
+
+filename.neut <- read.pcadapt(pool.data.neut2, type = "pool")
+res.neut <- pcadapt(filename.neut, min.maf = 0.1)
+
+filename.neut.b2 <- read.pcadapt(pool.data.neut2.b2, type = "pool")
+res.neut.b2 <- pcadapt(filename.neut.b2)
+
+filename.neut.b3 <- read.pcadapt(pool.data.neut2.b3, type = "pool")
+res.neut.b3 <- pcadapt(filename.neut.b3)
+
+filename.neut.b4 <- read.pcadapt(pool.data.neut2.b4, type = "pool")
+res.neut.b4 <- pcadapt(filename.neut.b4)
+```
+
+```{r}
+par(mfrow = c(2, 2))
+for (i in 1:4)
+  plot(res.neut$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```
+
+```{r}
+plot(res.neut,option="screeplot")
+```
+
+```{r}
+res.neut <- pcadapt(filename.neut, K =4,min.maf = 0.001)
+poplist.names <- factor(c("Initial","Initial","Initial","Initial","Control","Control","Control","Stres.neuts","Stres.neuts","Stres.neuts","Initial","Initial","Initial","Initial","Control","Control","Control","Stres.neuts","Stres.neuts","Stres.neuts","Initial","Initial","Initial","Initial","Control","Control","Control","Stres.neuts","Stres.neuts","Stres.neuts"), levels = c("Initial","Control","Stres.neuts"))
+p1 <- plot(res.neut, option = "scores", i = 1, j = 2, pop = poplist.names,
+           col = c("purple", "#56B4E9", "orange"))
+
+pve <- res.neut$singular.values^2 / sum(res.neut$singular.values^2)
+
+p1 + xlab(paste0("PC1 (", round(pve[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("All_neut_loci_PCA.pdf", width = 7, height = 6, units = "in")
+```
+
+```{r}
+poplist.names <- c(rep("Block2", 10),rep("Block3", 10),rep("Block4", 10))
+p1 <- plot(res.neut, option = "scores", i = 1, j = 2, pop = poplist.names, col = c("#CC79A7", "#009E73", "#0072B2"))
+
+p1 + xlab(paste0("PC1 (", round(pve[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("All_neut_loci_PCA_byBlock.pdf", width = 7, height = 6, units = "in")
+```
+
+
+## Block 2 only
+
+```{r}
+par(mfrow = c(2, 2))
+for (i in 1:4)
+  plot(res.b2$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```
+
+```{r}
+plot(res.b2,option="screeplot")
+```
+
+```{r}
+res.b2 <- pcadapt(filename.b2, K =2,min.maf = 0.001)
+poplist.names <- factor(c(rep("Initial", 4),rep("Control", 3),rep("Stress", 3)), levels = c("Initial","Control","Stress"))
+p1 <- plot(res.b2, option = "scores", i = 1, j = 2, pop = poplist.names,
+           col = c("purple", "#56B4E9", "orange"))
+
+pve.b2 <- res.b2$singular.values^2 / sum(res.b2$singular.values^2)
+
+p1 + xlab(paste0("PC1 (", round(pve.b2[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve.b2[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("B2_cand_loci_PCA.pdf", width = 7, height = 6, units = "in")
+```
+
+```{r}
+poplist.names <- factor(c(rep("Initial", 4),rep("Control", 3),rep("Stress", 3)), levels = c("Initial","Control","Stress"))
+B2.out.df <- data.frame(res.b2$scores)
+colnames(B2.out.df) <- c("PC1","PC2")
+B2.out.df$POP <- poplist.names
+p2 <- ggplot(B2.out.df, aes(x=PC1, y= PC2, fill= POP)) + geom_point(aes(alpha=0.2), size =10,shape=21, col="black")+  scale_fill_manual(values=c("purple", "#56B4E9", "orange"), name = "Pooled larval samples")+ 
+guides(alpha=FALSE) +theme(axis.title.x = element_text(size = 24),axis.title.y = element_text(size = 24))
+
+pve.b2 <- res.b2$singular.values^2 / sum(res.b2$singular.values^2)
+
+p2 + xlab(paste0("PC1 (", round(pve.b2[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve.b2[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("B2_cand_loci_PCA_large.pdf", width = 7, height = 7, units = "in")
+```
+
+```{r}
+par(mfrow = c(2, 2))
+for (i in 1:4)
+  plot(res.neut.b2$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```
+
+```{r}
+plot(res.neut.b2,option="screeplot")
+```
+
+```{r}
+res.neut.b2 <- pcadapt(filename.neut.b2, K =2,min.maf = 0.001)
+poplist.names <- factor(c(rep("Initial", 4),rep("Control", 3),rep("Stress", 3)), levels = c("Initial","Control","Stress"))
+p1 <- plot(res.neut.b2, option = "scores", i = 1, j = 2, pop = poplist.names,
+           col = c("purple", "#56B4E9", "orange"))
+
+pve.b2 <- res.neut.b2$singular.values^2 / sum(res.neut.b2$singular.values^2)
+
+p1 + xlab(paste0("PC1 (", round(pve.b2[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve.b2[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("B2_neut_loci_PCA.pdf", width = 7, height = 6, units = "in")
+```
+
+
+## Block 3 only
+
+```{r}
+par(mfrow = c(2, 2))
+for (i in 1:4)
+  plot(res.b3$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```
+
+```{r}
+plot(res.b3,option="screeplot")
+```
+
+```{r}
+res.b3 <- pcadapt(filename.b3, K =2,min.maf = 0.001)
+poplist.names <- factor(c(rep("Initial", 4),rep("Control", 3),rep("Stress", 3)), levels = c("Initial","Control","Stress"))
+p1 <- plot(res.b3, option = "scores", i = 1, j = 2, pop = poplist.names,
+           col = c("purple", "#56B4E9", "orange"))
+
+pve.b3 <- res.b3$singular.values^2 / sum(res.b3$singular.values^2)
+
+p1 + xlab(paste0("PC1 (", round(pve.b3[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve.b3[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("B3_cand_loci_PCA.pdf", width = 7, height = 6, units = "in")
+```
+
+```{r}
+poplist.names <- factor(c(rep("Initial", 4),rep("Control", 3),rep("Stress", 3)), levels = c("Initial","Control","Stress"))
+B3.out.df <- data.frame(res.b3$scores)
+colnames(B3.out.df) <- c("PC1","PC2")
+B3.out.df$POP <- poplist.names
+p3 <- ggplot(B3.out.df, aes(x=PC1, y= PC2, fill= POP)) + geom_point(aes(alpha=0.2), size =10,shape=21, col="black")+  scale_fill_manual(values=c("purple", "#56B4E9", "orange"), name = "Pooled larval samples")+ 
+guides(alpha=FALSE) +theme(axis.title.x = element_text(size = 24),axis.title.y = element_text(size = 24))
+
+pve.b3 <- res.b3$singular.values^2 / sum(res.b3$singular.values^2)
+
+p3 + xlab(paste0("PC1 (", round(pve.b3[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve.b3[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("B3_cand_loci_PCA_large.pdf", width = 7, height = 7, units = "in")
+```
+
+```{r}
+par(mfrow = c(2, 2))
+for (i in 1:4)
+  plot(res.neut.b3$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```
+
+```{r}
+plot(res.neut.b3,option="screeplot")
+```
+
+```{r}
+res.neut.b3 <- pcadapt(filename.neut.b3, K =2,min.maf = 0.001)
+poplist.names <- factor(c(rep("Initial", 4),rep("Control", 3),rep("Stress", 3)), levels = c("Initial","Control","Stress"))
+p1 <- plot(res.neut.b3, option = "scores", i = 1, j = 2, pop = poplist.names,
+           col = c("purple", "#56B4E9", "orange"))
+
+pve.b3 <- res.neut.b3$singular.values^2 / sum(res.neut.b3$singular.values^2)
+
+p1 + xlab(paste0("PC1 (", round(pve.b3[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve.b3[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("B3_neut_loci_PCA.pdf", width = 7, height = 6, units = "in")
+```
+
+## Block 4 only
+
+```{r}
+par(mfrow = c(2, 2))
+for (i in 1:4)
+  plot(res.b4$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```
+
+```{r}
+plot(res.b4,option="screeplot")
+```
+
+```{r}
+res.b4 <- pcadapt(filename.b4, K =2,min.maf = 0.001)
+poplist.names <- factor(c(rep("Initial", 4),rep("Control", 3),rep("Stress", 3)), levels = c("Initial","Control","Stress"))
+p1 <- plot(res.b4, option = "scores", i = 1, j = 2, pop = poplist.names,
+           col = c("purple", "#56B4E9", "orange"))
+
+pve.b4 <- res.b4$singular.values^2 / sum(res.b4$singular.values^2)
+
+p1 + xlab(paste0("PC1 (", round(pve.b4[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve.b4[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("B4_cand_loci_PCA.pdf", width = 7, height = 6, units = "in")
+```
+
+```{r}
+poplist.names <- factor(c(rep("Initial", 4),rep("Control", 3),rep("Stress", 3)), levels = c("Initial","Control","Stress"))
+B4.out.df <- data.frame(res.b4$scores)
+colnames(B4.out.df) <- c("PC1","PC2")
+B4.out.df$POP <- poplist.names
+p4 <- ggplot(B4.out.df, aes(x=PC1, y= PC2, fill= POP)) + geom_point(aes(alpha=0.2), size =10,shape=21, col="black")+  scale_fill_manual(values=c("purple", "#56B4E9", "orange"), name = "Pooled larval samples")+ 
+guides(alpha=FALSE) +theme(axis.title.x = element_text(size = 24),axis.title.y = element_text(size = 24))
+
+pve.b4 <- res.b4$singular.values^2 / sum(res.b4$singular.values^2)
+
+p4 + xlab(paste0("PC1 (", round(pve.b4[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve.b4[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("B4_cand_loci_PCA_large.pdf", width = 7, height = 7, units = "in")
+```
+
+```{r}
+par(mfrow = c(2, 2))
+for (i in 1:4)
+  plot(res.neut.b4$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```
+
+```{r}
+plot(res.neut.b4,option="screeplot")
+```
+
+```{r}
+res.neut.b4 <- pcadapt(filename.neut.b4, K =2,min.maf = 0.001)
+poplist.names <- factor(c(rep("Initial", 4),rep("Control", 3),rep("Stress", 3)), levels = c("Initial","Control","Stress"))
+p1 <- plot(res.neut.b4, option = "scores", i = 1, j = 2, pop = poplist.names,
+           col = c("purple", "#56B4E9", "orange"))
+
+pve.b4 <- res.neut.b4$singular.values^2 / sum(res.neut.b4$singular.values^2)
+
+p1 + xlab(paste0("PC1 (", round(pve.b4[1]*100, 2), "%)")) +
+     ylab(paste0("PC2 (", round(pve.b4[2]*100, 2), "%)")) +
+     ggtitle(NULL) +
+       theme_bw() +
+  theme(panel.grid.minor = element_blank())
+ggsave("B4_neut_loci_PCA.pdf", width = 7, height = 6, units = "in")
+```
+
+## Pairwise Fst
+
+```{r}
+library(poolfstat)
+```
+
+### All Blocks
+
+```{r}
+##Using sync file with outlier larval full population samples samples
+
+out_AB_samples <- c("B2_TL0_1", "B2_TL0_2", "B2_TL0_3", "B2_TL0_4", "B2_TL1_CB1", "B2_TL1_CB2", "B2_TL1_CB3", "B2_TL1_HB1", "B2_TL1_HB2", "B2_TL1_HB3", "B3_TL0_1", "B3_TL0_2", "B3_TL0_3", "B3_TL0_4", "B3_TL1_CB1", "B3_TL1_CB2", "B3_TL1_CB3", "B3_TL1_HB1", "B3_TL1_HB2", "B3_TL1_HB3", "B4_TL0_1", "B4_TL0_2", "B4_TL0_3", "B4_TL0_4", "B4_TL1_CB1", "B4_TL1_CB2", "B4_TL1_CB3", "B4_TL1_HB1", "B4_TL1_HB2", "B4_TL1_HB3")
+
+out_ABdstbn <- popsync2pooldata("AB.total.outlier.input", poolsizes = c(40000, 40000, 40000, 40000, 10000, 10000, 10000, 10000, 10000, 10000, 40000, 40000, 40000, 40000, 10000, 10000, 10000, 10000, 10000, 10000, 40000, 40000, 40000, 40000, 10000, 10000, 10000, 10000, 10000, 10000), poolnames = out_AB_samples, min.rc = 1, min.cov.per.pool = 1, max.cov.per.pool = 50000, min.maf = 0.1, noindel = TRUE, nlines.per.readblock = 1000)
+
+#Compute Fst for every SNP
+out_ABdstbn_SNPFst <- computeFST(out_ABdstbn, method = "Anova")
+
+#Compute pairwise Fst matrix
+out_ABdstbn_Fst <- compute.pairwiseFST(out_ABdstbn, method = "Anova", min.cov.per.pool = 1, max.cov.per.pool = 50000, min.maf = 0.001, output.snp.values = FALSE)
+
+out_ABdstbn_PairwiseFSTMatrix <- as.matrix(as.data.frame(out_ABdstbn_Fst@PairwiseFSTmatrix))
+
+RISG_AB_Fst <- out_ABdstbn_PairwiseFSTMatrix[c("B2_TL0_1", "B2_TL0_2", "B2_TL0_3", "B2_TL0_4", "B2_TL1_CB1", "B2_TL1_CB2", "B2_TL1_CB3", "B2_TL1_HB1", "B2_TL1_HB2", "B2_TL1_HB3", "B3_TL0_1", "B3_TL0_2", "B3_TL0_3", "B3_TL0_4", "B3_TL1_CB1", "B3_TL1_CB2", "B3_TL1_CB3", "B3_TL1_HB1", "B3_TL1_HB2", "B3_TL1_HB3", "B4_TL0_1", "B4_TL0_2", "B4_TL0_3", "B4_TL0_4", "B4_TL1_CB1", "B4_TL1_CB2", "B4_TL1_CB3", "B4_TL1_HB1", "B4_TL1_HB2", "B4_TL1_HB3"), c("B2_TL0_1", "B2_TL0_2", "B2_TL0_3", "B2_TL0_4", "B2_TL1_CB1", "B2_TL1_CB2", "B2_TL1_CB3", "B2_TL1_HB1", "B2_TL1_HB2", "B2_TL1_HB3", "B3_TL0_1", "B3_TL0_2", "B3_TL0_3", "B3_TL0_4", "B3_TL1_CB1", "B3_TL1_CB2", "B3_TL1_CB3", "B3_TL1_HB1", "B3_TL1_HB2", "B3_TL1_HB3", "B4_TL0_1", "B4_TL0_2", "B4_TL0_3", "B4_TL0_4", "B4_TL1_CB1", "B4_TL1_CB2", "B4_TL1_CB3", "B4_TL1_HB1", "B4_TL1_HB2", "B4_TL1_HB3")]
+write.csv(RISG_AB_Fst, "RISG_AB_Fst_Outliers.csv")
+```
+
+
+### Block 2
+
+```{r}
+##Using sync file with outlier larval full population samples samples
+
+out_B2_samples <- c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")
+
+out_B2dstbn <- popsync2pooldata("B2.total.outlier.input", poolsizes = c(40000, 40000, 40000, 40000, 10000, 10000, 10000, 10000, 10000, 10000), poolnames = out_B2_samples, min.rc = 0, min.cov.per.pool = 0, max.cov.per.pool = 50000, min.maf = 0, noindel = TRUE, nlines.per.readblock = 100)
+
+#Compute Fst for every SNP
+out_B2dstbn_SNPFst <- computeFST(out_B2dstbn, method = "Anova")
+
+#Compute pairwise Fst matrix
+out_B2dstbn_Fst <- compute.pairwiseFST(out_B2dstbn, method = "Anova", min.cov.per.pool = 1, max.cov.per.pool = 50000, min.maf = 0.1, output.snp.values = FALSE)
+
+out_B2dstbn_PairwiseFSTMatrix <- as.matrix(as.data.frame(out_B2dstbn_Fst@PairwiseFSTmatrix))
+
+RISG_B2_Fst <- out_B2dstbn_PairwiseFSTMatrix[c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3"), c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")]
+write.csv(RISG_B2_Fst, "RISG_B2_Fst_Outliers.csv")
+```
+
+```{r}
+# Plotting
+B2_fst <- read.csv("./RISG_B2_Fst_Outliers.csv")
+
+##Find mean Fst for each treatment replicate (since compared to four initial samples)
+# Control Rep1
+CB1 = (0.011807966 + 0.015026246 + 0.012726436 + 0.013999954)/4
+# Control Rep2
+CB2 = (0.01660931 + 0.017818079 + 0.017607014 + 0.01751911)/4
+# Control Rep3
+CB3 = (0.009793842 + 0.010737179 + 0.01049953 + 0.011150936)/4
+
+# Stress Rep1
+HB1 = (0.057619337 + 0.060887444 + 0.057891568 + 0.059826896)/4
+# Stress Rep2
+HB2 = (0.06186405 + 0.066412052 + 0.062987343 + 0.066231627)/4
+# Stress Rep3
+HB3 = (0.065465738 + 0.070315896 + 0.065943275 + 0.067477377)/4
+
+# Create the dataframe
+df.b2 <- data.frame(
+  Sample = c("TL0", "CB1", "CB2", "CB3", "HB1", "HB2", "HB3"),
+  Treatment = c("Initial", "Control", "Control", "Control", "Stress", "Stress", "Stress"),
+  Fst = c(0, CB1, CB2, CB3, HB1, HB2, HB3)
+)
+
+# Print the dataframe
+print(df.b2)
+```
+
+```{r}
+df.b2$Treatment <- factor(df.b2$Treatment, levels = c("Initial", "Control", "Stress"))
+
+p.b2 <- ggplot(df.b2, aes(x = Treatment, y = Fst, colour = Treatment)) +
+    geom_point(size = 2.5) +
+    ylim(0, 0.07) +
+    scale_colour_manual("Treatment", values = c("Initial" = "purple", "Control" = "#56B4E9", "Stress" = "orange")) +
+    theme_bw(base_size = 12) +
+    theme(panel.grid.minor = element_blank(), legend.position = "none") 
+p.b2
+
+p.b2 <- ggsave("B2_out_fst.pdf", width = 6, height = 7, units = "in")
+```
+
+```{r}
+##Using sync file with neutral larval B2 samples
+
+neut_B2_samples <- c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")
+
+neut_B2dstbn <- popsync2pooldata("B2.total.neutral.input", poolsizes = c(40000, 40000, 40000, 40000, 10000, 10000, 10000, 10000, 10000, 10000), poolnames = neut_B2_samples, min.rc = 0, min.cov.per.pool = 0, max.cov.per.pool = 50000, min.maf = 0, noindel = TRUE, nlines.per.readblock = 1000)
+
+#Compute Fst for every SNP
+neut_B2dstbn_SNPFst <- computeFST(neut_B2dstbn, method = "Anova")
+
+#Compute pairwise Fst matrix
+neut_B2dstbn_Fst <- compute.pairwiseFST(neut_B2dstbn, method = "Anova", min.cov.per.pool = 1, max.cov.per.pool = 50000, min.maf = 0.1, output.snp.values = FALSE)
+
+neut_B2dstbn_PairwiseFSTMatrix <- as.matrix(as.data.frame(neut_B2dstbn_Fst@PairwiseFSTmatrix))
+
+RISG_B2_Fst_Neut <- neut_B2dstbn_PairwiseFSTMatrix[c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3"), c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")]
+write.csv(RISG_B2_Fst_Neut, "RISG_B2_Fst_Neutral.csv")
+```
+
+### Block 3
+
+```{r}
+##Using sync file with outlier larval full population samples samples
+
+out_B3_samples <- c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")
+
+out_B3dstbn <- popsync2pooldata("B3.total.outlier.input", poolsizes = c(40000, 40000, 40000, 40000, 10000, 10000, 10000, 10000, 10000, 10000), poolnames = out_B3_samples, min.rc = 0, min.cov.per.pool = 0, max.cov.per.pool = 50000, min.maf = 0, noindel = TRUE, nlines.per.readblock = 100)
+
+#Compute Fst for every SNP
+out_B3dstbn_SNPFst <- computeFST(out_B3dstbn, method = "Anova")
+
+#Compute pairwise Fst matrix
+out_B3dstbn_Fst <- compute.pairwiseFST(out_B3dstbn, method = "Anova", min.cov.per.pool = 1, max.cov.per.pool = 50000, min.maf = 0.1, output.snp.values = FALSE)
+
+out_B3dstbn_PairwiseFSTMatrix <- as.matrix(as.data.frame(out_B3dstbn_Fst@PairwiseFSTmatrix))
+
+RISG_B3_Fst <- out_B3dstbn_PairwiseFSTMatrix[c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3"), c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")]
+write.csv(RISG_B3_Fst, "RISG_B3_Fst_Outliers.csv")
+```
+
+```{r}
+# Plotting
+B3_fst <- read.csv("./RISG_B3_Fst_Outliers.csv")
+
+##Find mean Fst for each treatment replicate (since compared to four initial samples)
+# Control Rep1
+CB1 = (0.017708856 + 0.014380814 + 0.015249293 + 0.013490189)/4
+# Control Rep2
+CB2 = (0.012909324 + 0.009340816 + 0.012177128 + 0.011700868)/4
+# Control Rep3
+CB3 = (0.01110532 + 0.009031545 + 0.008387985 + 0.007971423)/4
+
+# Stress Rep1
+HB1 = (0.037290022 + 0.035108102 + 0.036709939 + 0.035324972)/4
+# Stress Rep2
+HB2 = (0.02919536 + 0.028835029 + 0.029710279 + 0.026063932)/4
+# Stress Rep3
+HB3 = (0.022885231 + 0.021126912 + 0.021246467 + 0.021437351)/4
+
+# Create the dataframe
+df.b3 <- data.frame(
+  Sample = c("TL0", "CB1", "CB2", "CB3", "HB1", "HB2", "HB3"),
+  Treatment = c("Initial", "Control", "Control", "Control", "Stress", "Stress", "Stress"),
+  Fst = c(0, CB1, CB2, CB3, HB1, HB2, HB3)
+)
+
+# Print the dataframe
+print(df.b3)
+```
+
+```{r}
+df.b3$Treatment <- factor(df.b3$Treatment, levels = c("Initial", "Control", "Stress"))
+
+p.b3 <- ggplot(df.b3, aes(x = Treatment, y = Fst, colour = Treatment)) +
+    geom_point(size = 2.5) +
+    ylim(0, 0.07) +
+    scale_colour_manual("Treatment", values = c("Initial" = "purple", "Control" = "#56B4E9", "Stress" = "orange")) +
+    theme_bw(base_size = 12) +
+    theme(panel.grid.minor = element_blank(), legend.position = "none") 
+p.b3
+
+p.b3 <- ggsave("B3_out_fst.pdf", width = 6, height = 7, units = "in")
+```
+
+```{r}
+##Using sync file with neutral larval B3 samples
+
+neut_B3_samples <- c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")
+
+neut_B3dstbn <- popsync2pooldata("B3.total.neutral.input", poolsizes = c(40000, 40000, 40000, 40000, 10000, 10000, 10000, 10000, 10000, 10000), poolnames = neut_B3_samples, min.rc = 0, min.cov.per.pool = 0, max.cov.per.pool = 50000, min.maf = 0, noindel = TRUE, nlines.per.readblock = 1000)
+
+#Compute Fst for every SNP
+neut_B3dstbn_SNPFst <- computeFST(neut_B3dstbn, method = "Anova")
+
+#Compute pairwise Fst matrix
+neut_B3dstbn_Fst <- compute.pairwiseFST(neut_B3dstbn, method = "Anova", min.cov.per.pool = 1, max.cov.per.pool = 50000, min.maf = 0.1, output.snp.values = FALSE)
+
+neut_B3dstbn_PairwiseFSTMatrix <- as.matrix(as.data.frame(neut_B3dstbn_Fst@PairwiseFSTmatrix))
+
+RISG_B3_Fst_Neut <- neut_B3dstbn_PairwiseFSTMatrix[c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3"), c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")]
+write.csv(RISG_B3_Fst_Neut, "RISG_B3_Fst_Neutral.csv")
+```
+
+
+### Block 4
+
+```{r}
+##Using sync file with outlier larval full population samples samples
+
+out_B4_samples <- c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")
+
+out_B4dstbn <- popsync2pooldata("B4.total.outlier.input", poolsizes = c(40000, 40000, 40000, 40000, 10000, 10000, 10000, 10000, 10000, 10000), poolnames = out_B4_samples, min.rc = 0, min.cov.per.pool = 0, max.cov.per.pool = 50000, min.maf = 0, noindel = TRUE, nlines.per.readblock = 100)
+
+#Compute Fst for every SNP
+out_B4dstbn_SNPFst <- computeFST(out_B4dstbn, method = "Anova")
+
+#Compute pairwise Fst matrix
+out_B4dstbn_Fst <- compute.pairwiseFST(out_B4dstbn, method = "Anova", min.cov.per.pool = 1, max.cov.per.pool = 50000, min.maf = 0.1, output.snp.values = FALSE)
+
+out_B4dstbn_PairwiseFSTMatrix <- as.matrix(as.data.frame(out_B4dstbn_Fst@PairwiseFSTmatrix))
+
+RISG_B4_Fst <- out_B4dstbn_PairwiseFSTMatrix[c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3"), c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")]
+write.csv(RISG_B4_Fst, "RISG_B4_Fst_Outliers.csv")
+```
+
+```{r}
+# Plotting
+B4_fst <- read.csv("./RISG_B4_Fst_Outliers.csv")
+
+##Find mean Fst for each treatment replicate (since compared to four initial samples)
+# Control Rep1
+CB1 = (0.009442129 + 0.012191104 + 0.012538055 + 0.010455243)/4
+# Control Rep2
+CB2 = (0.006959645 + 0.009939153 + 0.010391017 + 0.006471974)/4
+# Control Rep3
+CB3 = (0.007595704 + 0.01005335 + 0.01058412 + 0.011185867)/4
+
+# Stress Rep1
+HB1 = (0.032993081 + 0.033843252 + 0.033352225 + 0.035699796)/4
+# Stress Rep2
+HB2 = (0.034327993 + 0.03943782 + 0.0356146 + 0.036040803)/4
+# Stress Rep3
+HB3 = (0.038761757 + 0.041929297 + 0.041715464 + 0.041830461)/4
+
+# Create the dataframe
+df.b4 <- data.frame(
+  Sample = c("TL0", "CB1", "CB2", "CB3", "HB1", "HB2", "HB3"),
+  Treatment = c("Initial", "Control", "Control", "Control", "Stress", "Stress", "Stress"),
+  Fst = c(0, CB1, CB2, CB3, HB1, HB2, HB3)
+)
+
+# Print the dataframe
+print(df.b4)
+```
+
+```{r}
+df.b4$Treatment <- factor(df.b4$Treatment, levels = c("Initial", "Control", "Stress"))
+
+p.b4 <- ggplot(df.b4, aes(x = Treatment, y = Fst, colour = Treatment)) +
+    geom_point(size = 2.5) +
+    ylim(0, 0.07) +
+    scale_colour_manual("Treatment", values = c("Initial" = "purple", "Control" = "#56B4E9", "Stress" = "orange")) +
+    theme_bw(base_size = 12) +
+    theme(panel.grid.minor = element_blank(), legend.position = "none") 
+p.b4
+
+p.b4 <- ggsave("B4_out_fst.pdf", width = 6, height = 7, units = "in")
+```
+
+```{r}
+##Using sync file with neutral larval B4 samples
+
+neut_B4_samples <- c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")
+
+neut_B4dstbn <- popsync2pooldata("B4.total.neutral.input", poolsizes = c(40000, 40000, 40000, 40000, 10000, 10000, 10000, 10000, 10000, 10000), poolnames = neut_B4_samples, min.rc = 0, min.cov.per.pool = 0, max.cov.per.pool = 50000, min.maf = 0, noindel = TRUE, nlines.per.readblock = 1000)
+
+#Compute Fst for every SNP
+neut_B4dstbn_SNPFst <- computeFST(neut_B4dstbn, method = "Anova")
+
+#Compute pairwise Fst matrix
+neut_B4dstbn_Fst <- compute.pairwiseFST(neut_B4dstbn, method = "Anova", min.cov.per.pool = 1, max.cov.per.pool = 50000, min.maf = 0.1, output.snp.values = FALSE)
+
+neut_B4dstbn_PairwiseFSTMatrix <- as.matrix(as.data.frame(neut_B4dstbn_Fst@PairwiseFSTmatrix))
+
+RISG_B4_Fst_Neut <- neut_B4dstbn_PairwiseFSTMatrix[c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3"), c("TL0_1", "TL0_2", "TL0_3", "TL0_4", "TL1_CB1", "TL1_CB2", "TL1_CB3", "TL1_HB1", "TL1_HB2", "TL1_HB3")]
+write.csv(RISG_B4_Fst_Neut, "RISG_B4_Fst_Neutral.csv")
+```
+
+
+## Global Fst Plots
+
+```{r}
+# Extracting Fst values and chromosome and position info for B2 cand loci
+out_B2_locus_fst <- as.data.frame(out_B2dstbn_SNPFst[["snp.Fstats"]][["Fst"]])
+
+out_B2_locus_chrom <- as.data.frame(out_B2dstbn@snp.info[["Chromosome"]])
+
+out_B2_locus_pos <- as.data.frame(out_B2dstbn@snp.info[["Position"]])
+
+out_B2_locus_fst_bypos <- bind_cols(out_B2_locus_fst,out_B2_locus_chrom,out_B2_locus_pos)
+
+colnames(out_B2_locus_fst_bypos) <- c("Fst", "Chromosome", "Position")
+
+# Adding columns to specify loci as outliers 
+out_B2_locus_fst_bypos$B2_sel_outlier <- TRUE
+```
+
+```{r}
+# Extracting Fst values and chromosome and position info for B2 neutral loci
+neut_B2_locus_fst <- as.data.frame(neut_B2dstbn_SNPFst[["snp.Fstats"]][["Fst"]])
+
+neut_B2_locus_chrom <- as.data.frame(neut_B2dstbn@snp.info[["Chromosome"]])
+
+neut_B2_locus_pos <- as.data.frame(neut_B2dstbn@snp.info[["Position"]])
+
+neut_B2_locus_fst_bypos <- bind_cols(neut_B2_locus_fst,neut_B2_locus_chrom,neut_B2_locus_pos)
+
+colnames(neut_B2_locus_fst_bypos) <- c("Fst", "Chromosome", "Position")
+
+# Adding columns to specify loci as outliers 
+neut_B2_locus_fst_bypos$B2_sel_outlier <- FALSE
+```
+
+```{r}
+combined_B2_global_Fst <- bind_rows(out_B2_locus_fst_bypos, neut_B2_locus_fst_bypos)
+```
+
+```{r}
+# Change naming of chromosomes
+chr_labs <- c("Chr 1", "Chr 2", "Chr 3", "Chr 4", "Chr 5", "Chr 6", "Chr 7", "Chr 8", "Chr 9","Chr 10")
+names(chr_labs) <- c("NC_035780.1", "NC_035781.1", "NC_035782.1", "NC_035783.1", "NC_035784.1", "NC_035785.1", "NC_035786.1", "NC_035787.1", "NC_035788.1", "NC_035789.1")
+
+# Create the plot
+p <- combined_B2_global_Fst %>%
+  mutate(pos_mb = Position / 1000000) %>%
+  ggplot(aes(x = pos_mb, y = Fst)) +
+  # Add grey points for non-outliers
+  geom_point(color = "grey", size = 1) +
+  # Add orange points for outliers
+  geom_point(data = . %>% filter(B2_sel_outlier == TRUE), 
+             aes(color = "Block 2 candidate loci"), size = 2) +
+  facet_wrap(~Chromosome, scales = "free_x", nrow = 1, labeller = labeller(Chromosome = chr_labs)) +
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.001)) + 
+  theme_minimal() +
+  scale_color_manual(values = c("Block 2 candidate loci" = "#CC79A7"),
+                     name = NULL) +
+  labs(x = "Position (Mb)", y = expression(F[ST])) +
+  ylim(-0.036, 0.3) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.background = element_blank(),
+        strip.text.x = element_text(size = 10, face = "bold"),
+        panel.spacing = unit(0.1, "lines"),
+        legend.position = "right")
+ggsave("B2_global_fst.pdf", width = 12, height = 5, units = "in")
+# Display the plot
+print(p)
+```
+
+```{r}
+# Extracting Fst values and chromosome and position info for B3 cand loci
+out_B3_locus_fst <- as.data.frame(out_B3dstbn_SNPFst[["snp.Fstats"]][["Fst"]])
+
+out_B3_locus_chrom <- as.data.frame(out_B3dstbn@snp.info[["Chromosome"]])
+
+out_B3_locus_pos <- as.data.frame(out_B3dstbn@snp.info[["Position"]])
+
+out_B3_locus_fst_bypos <- bind_cols(out_B3_locus_fst,out_B3_locus_chrom,out_B3_locus_pos)
+
+colnames(out_B3_locus_fst_bypos) <- c("Fst", "Chromosome", "Position")
+
+# Adding columns to specify loci as outliers
+out_B3_locus_fst_bypos$B3_sel_outlier <- TRUE
+```
+
+```{r}
+# Extracting Fst values and chromosome and position info for B3 neutral loci
+neut_B3_locus_fst <- as.data.frame(neut_B3dstbn_SNPFst[["snp.Fstats"]][["Fst"]])
+
+neut_B3_locus_chrom <- as.data.frame(neut_B3dstbn@snp.info[["Chromosome"]])
+
+neut_B3_locus_pos <- as.data.frame(neut_B3dstbn@snp.info[["Position"]])
+
+neut_B3_locus_fst_bypos <- bind_cols(neut_B3_locus_fst,neut_B3_locus_chrom,neut_B3_locus_pos)
+
+colnames(neut_B3_locus_fst_bypos) <- c("Fst", "Chromosome", "Position")
+
+# Adding columns to specify loci as outliers 
+neut_B3_locus_fst_bypos$B3_sel_outlier <- FALSE
+```
+
+```{r}
+combined_B3_global_Fst <- bind_rows(out_B3_locus_fst_bypos, neut_B3_locus_fst_bypos)
+```
+
+```{r}
+# Change naming of chromosomes
+chr_labs <- c("Chr 1", "Chr 2", "Chr 3", "Chr 4", "Chr 5", "Chr 6", "Chr 7", "Chr 8", "Chr 9","Chr 10")
+names(chr_labs) <- c("NC_035780.1", "NC_035781.1", "NC_035782.1", "NC_035783.1", "NC_035784.1", "NC_035785.1", "NC_035786.1", "NC_035787.1", "NC_035788.1", "NC_035789.1")
+
+# Create the plot
+p <- combined_B3_global_Fst %>%
+  mutate(pos_mb = Position / 1000000) %>%
+  ggplot(aes(x = pos_mb, y = Fst)) +
+  # Add grey points for non-outliers
+  geom_point(color = "grey", size = 1) +
+  # Add orange points for outliers
+  geom_point(data = . %>% filter(B3_sel_outlier == TRUE), 
+             aes(color = "Block 3 candidate loci"), size = 2) +
+  facet_wrap(~Chromosome, scales = "free_x", nrow = 1, labeller = labeller(Chromosome = chr_labs)) +
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.001)) + 
+  theme_minimal() +
+  scale_color_manual(values = c("Block 3 candidate loci" = "#009E73"),
+                     name = NULL) +
+  labs(x = "Position (Mb)", y = expression(F[ST])) +
+  ylim(-0.036, 0.4) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.background = element_blank(),
+        strip.text.x = element_text(size = 10, face = "bold"),
+        panel.spacing = unit(0.1, "lines"),
+        legend.position = "right")
+ggsave("B3_global_fst.pdf", width = 12, height = 5, units = "in")
+# Display the plot
+print(p)
+```
+
+```{r}
+# Extracting Fst values and chromosome and position info for neutral loci
+out_B4_locus_fst <- as.data.frame(out_B4dstbn_SNPFst[["snp.Fstats"]][["Fst"]])
+
+out_B4_locus_chrom <- as.data.frame(out_B4dstbn@snp.info[["Chromosome"]])
+
+out_B4_locus_pos <- as.data.frame(out_B4dstbn@snp.info[["Position"]])
+
+out_B4_locus_fst_bypos <- bind_cols(out_B4_locus_fst,out_B4_locus_chrom,out_B4_locus_pos)
+
+colnames(out_B4_locus_fst_bypos) <- c("Fst", "Chromosome", "Position")
+
+# Adding columns to specify loci as outliers
+out_B4_locus_fst_bypos$B4_sel_outlier <- TRUE
+```
+
+```{r}
+# Extracting Fst values and chromosome and position info for B4 neutral loci
+neut_B4_locus_fst <- as.data.frame(neut_B4dstbn_SNPFst[["snp.Fstats"]][["Fst"]])
+
+neut_B4_locus_chrom <- as.data.frame(neut_B4dstbn@snp.info[["Chromosome"]])
+
+neut_B4_locus_pos <- as.data.frame(neut_B4dstbn@snp.info[["Position"]])
+
+neut_B4_locus_fst_bypos <- bind_cols(neut_B4_locus_fst,neut_B4_locus_chrom,neut_B4_locus_pos)
+
+colnames(neut_B4_locus_fst_bypos) <- c("Fst", "Chromosome", "Position")
+
+# Adding columns to specify loci as outliers 
+neut_B4_locus_fst_bypos$B4_sel_outlier <- FALSE
+```
+
+```{r}
+combined_B4_global_Fst <- bind_rows(out_B4_locus_fst_bypos, neut_B4_locus_fst_bypos)
+```
+
+```{r}
+# Change naming of chromosomes
+chr_labs <- c("Chr 1", "Chr 2", "Chr 3", "Chr 4", "Chr 5", "Chr 6", "Chr 7", "Chr 8", "Chr 9","Chr 10")
+names(chr_labs) <- c("NC_035780.1", "NC_035781.1", "NC_035782.1", "NC_035783.1", "NC_035784.1", "NC_035785.1", "NC_035786.1", "NC_035787.1", "NC_035788.1", "NC_035789.1")
+
+# Create the plot
+p <- combined_B4_global_Fst %>%
+  mutate(pos_mb = Position / 1000000) %>%
+  ggplot(aes(x = pos_mb, y = Fst)) +
+  # Add grey points for non-outliers
+  geom_point(color = "grey", size = 1) +
+  # Add orange points for outliers
+  geom_point(data = . %>% filter(B4_sel_outlier == TRUE), 
+             aes(color = "Block 4 candidate loci"), size = 2) +
+  facet_wrap(~Chromosome, scales = "free_x", nrow = 1, labeller = labeller(Chromosome = chr_labs)) +
+    scale_y_continuous(labels = scales::number_format(accuracy = 0.001)) + 
+  theme_minimal() +
+  scale_color_manual(values = c("Block 4 candidate loci" = "#0072B2"),
+                     name = NULL) +
+  labs(x = "Position (Mb)", y = expression(F[ST])) +
+  ylim(-0.036, 0.3) +  
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        strip.background = element_blank(),
+        strip.text.x = element_text(size = 10, face = "bold"),
+        panel.spacing = unit(0.1, "lines"),
+        legend.position = "right")
+ggsave("B4_global_fst.pdf", width = 12, height = 5, units = "in")
+# Display the plot
+print(p)
+```
+
+## Manhattan Plots
+
+```{r}
+library(patchwork)
+```
+
+```{r}
+b2.h <- subset(total.sig,  BLOCK == "2" & Sig.Hi == TRUE)
+b2.c <- subset(B2.pv, QCon < 0.1)
+
+
+B2.pp <- B2.pv %>%
+  mutate(
+    Group = case_when(
+      SNP %in% b2.c$SNP ~ "Control Treatment Filtered",
+      SNP %in% all_con$SNP ~ "Control Treatment Filtered",
+      SNP %in% con_filter$SNP ~ "Control Treatment Filtered",
+      TRUE ~ "Neutral"
+    )
+  )
+
+man <-ggman(B2.pp, pvalue="QHi", chr="CHR", snp="SNP",bp="BP", relative.positions = TRUE ,sigLine = NA, pointSize=1.5,title = "", alpha = 0.5)
+
+dfm <- man[[1]]
+
+dfm$chrom_alt <- factor(dfm$chrom_alt, levels=c(0,1))
+
+dfmo <- semi_join(dfm, b2.h, by = "SNP")
+dfmo$Group <- "Block 2 Outlier"
+
+dfmsplit <- split(dfm, dfm$chrom)
+xbreaks <- sapply(dfmsplit,function(x) {
+    midpoint <- length(x$index)/2
+    if(midpoint <1) midpoint <- 1
+    return(x$index[midpoint])
+})
+b2.Hi <-ggplot(dfm, aes(x= index, y=marker, colour = as.factor(chrom_alt)))+
+  geom_point(aes(alpha=0.5, shape=Group, size = marker))+  
+  geom_point(data=dfmo, fill="#CC79A7", aes(x=index, y=marker, shape=Group, size=marker),  color = "#CC79A7")+
+  scale_x_continuous(breaks = xbreaks, labels = names(xbreaks),expand = c(0,0),limits = c(0,max(dfm$index)+10)) +
+  guides(colour = FALSE,alpha=FALSE, fill = FALSE, size = FALSE) +
+  scale_y_continuous(expand = c(0,0),limits=c(0,max(dfm$marker+1,na.rm=TRUE)))+
+  scale_size_continuous(range = c(0.25,3)) +
+  ggtitle("Block A") +
+  labs(x = "Chromosome") +
+  theme_classic()+
+  labs(y=expression(-Log10(q-value))) +
+  scale_shape_manual(values=c(21,19,20))+
+  scale_color_manual(values=c("grey", "dark grey"), guide =FALSE) 
+
+b3.h <- subset(total.sig,  BLOCK == "3" & Sig.Hi == TRUE)
+b3.c <- subset(B3.pv, QCon < 0.1)
+
+B3.pp <- B3.pv %>%
+  mutate(
+    Group = case_when(
+      SNP %in% b3.c$SNP ~ "Control Treatment Filtered",
+      SNP %in% all_con$SNP ~ "Control Treatment Filtered",
+      SNP %in% con_filter$SNP ~ "Control Treatment Filtered",
+      TRUE ~ "Neutral"
+    )
+  )
+
+man <-ggman(B3.pp, pvalue="QHi", chr="CHR", snp="SNP",bp="BP", relative.positions = TRUE ,sigLine = NA, pointSize=1.5,title = "", alpha = 0.5)
+
+dfm <- man[[1]]
+
+dfm$chrom_alt <- factor(dfm$chrom_alt, levels=c(0,1))
+
+
+dfmo <- semi_join(dfm, b3.h, by = "SNP")
+dfmo$Group <- "Block 3 Outlier"
+
+dfmsplit <- split(dfm, dfm$chrom)
+xbreaks <- sapply(dfmsplit,function(x) {
+    midpoint <- length(x$index)/2
+    if(midpoint <1) midpoint <- 1
+    return(x$index[midpoint])
+})
+
+b3.Hi <-ggplot(dfm, aes(x= index, y=marker, colour = as.factor(chrom_alt)))+
+  geom_point(aes(alpha=0.5, shape=Group, size = marker))+  
+  #geom_point(aes(x=index, y=log10(QCON), colour = as.factor(chrom_alt), alpha=0.5, shape = Group))+  
+  geom_point(data=dfmo, fill="#009E73", aes(x=index, y=marker, shape=Group, size=marker),  color = "#009E73")+
+  scale_x_continuous(breaks = xbreaks, labels = names(xbreaks),expand = c(0,0),limits = c(0,max(dfm$index)+10)) +
+  guides(colour = FALSE,alpha=FALSE, fill = FALSE, size=FALSE) +
+  scale_y_continuous(expand = c(0,0),limits=c(0,max(dfm$marker+1,na.rm=TRUE)))+
+  scale_size_continuous(range = c(0.25,3)) +
+  labs(x = "Chromosome") +
+  ggtitle("Block B") +
+  theme_classic()+
+  labs(y=expression(-Log10(q-value))) +
+  scale_shape_manual(values=c(21,19,20))+
+  scale_color_manual(values=c("grey", "dark grey"), guide =FALSE) 
+
+
+b4.h <- subset(total.sig,  BLOCK == "4" & Sig.Hi == TRUE)
+b4.c <- subset(B4.pv, QCon < 0.1)
+
+B4.pp <- B4.pv %>%
+  mutate(
+    Group = case_when(
+      SNP %in% b4.c$SNP ~ "Control Treatment Filtered",
+      SNP %in% all_con$SNP ~ "Control Treatment Filtered",
+      SNP %in% con_filter$SNP ~ "Control Treatment Filtered",
+      TRUE ~ "Neutral"
+    )
+  )
+
+man <-ggman(B4.pp, pvalue="QHi", chr="CHR", snp="SNP",bp="BP", relative.positions = TRUE ,sigLine = NA, pointSize=1.5,title = "", alpha = 0.5)
+
+dfm <- man[[1]]
+
+dfm$chrom_alt <- factor(dfm$chrom_alt, levels=c(0,1))
+
+dfmo <- semi_join(dfm, b4.h, by = "SNP")
+dfmo$Group <- "Block 4 Outlier"
+
+dfmsplit <- split(dfm, dfm$chrom)
+xbreaks <- sapply(dfmsplit,function(x) {
+    midpoint <- length(x$index)/2
+    if(midpoint <1) midpoint <- 1
+    return(x$index[midpoint])
+})
+
+b4.Hi <-ggplot(dfm, aes(x= index, y=marker, colour = as.factor(chrom_alt)))+
+  geom_point(aes(alpha=0.5, shape=Group, size = marker))+  
+  geom_point(data=dfmo, fill="#0072B2", aes(x=index, y=marker, shape=Group, size=marker),  color = "#0072B2")+
+  scale_x_continuous(breaks = xbreaks, labels = names(xbreaks),expand = c(0,0),limits = c(0,max(dfm$index)+10)) +
+  guides(colour = FALSE,alpha=FALSE, fill = FALSE, size=FALSE) +
+  #scale_y_continuous(expand = c(0,0),limits=c(0,max(dfm$marker+1,na.rm=TRUE)))+
+  scale_y_continuous(expand = c(0,0),limits=c(0,max(dfm$marker+1,na.rm=TRUE)))+
+  labs(x = "Chromosome") +
+  ggtitle("Block C") +
+  scale_size_continuous(range = c(0.25,3)) +
+  theme_classic()+
+  labs(y=expression(-Log10(q-value))) +
+  scale_shape_manual(values=c(21,19,20))+
+  scale_color_manual(values=c("grey", "dark grey"), guide =FALSE) 
+
+png(filename="RISG_manhattanplot.png", type="cairo",units="px", width=5600, height=3000, res=300, bg="transparent")
+
+(b2.Hi / b3.Hi / b4.Hi )  + plot_annotation(tag_levels = 'A') + plot_layout(guides = 'collect') 
+#(b10.CASE / b11.CASE /b12.CASE )  + plot_annotation(tag_levels = 'A') & theme_black()
+#man+scale_fill_manual(values = c("#009E73","#E69F00", "#0072B2"),name = "Legend")
+null <- dev.off()
+```
+
+## Shared loci across Blocks 
+
+```{bash, eval=FALSE}
+cut -f1,2 B2.total.outlier.input | sort -k1,2 | uniq > B2.outlier.loci
+
+cut -f1,2 B3.total.outlier.input | sort -k1,2 | uniq > B3.outlier.loci
+
+cut -f1,2 B4.total.outlier.input | sort -k1,2 | uniq > B4.outlier.loci
+```
+
+```{bash, eval=FALSE}
+comm -12 <(sort B2.outlier.loci) <(sort B3.outlier.loci) | comm -12 - <(sort B4.outlier.loci) > AB.outlier.loci
+```
+
+1108 overlapping loci 
+
+```{bash, eval=FALSE}
+vcftools --gzvcf RISGTRSdp20g75nDNA.FIL.recode.vcf.gz --positions AB.outlier.loci --recode --recode-INFO-all --out shared.outlier.RISG.dp20
+
+python2 VCFtoPopPool.py shared.outlier.RISG.dp20.recode.vcf shared.outlier.sync
+
+mawk '!/CHR/' shared.outlier.sync > shared.outlier.input
+```
+
+```{bash,eval=FALSE}
+./assessPool/scripts/p2/snp-frequency-diff.pl --input shared.outlier.input --min-count 1 --min-coverage 1 --output-prefix shared.outlier --max-coverage 50000 
+```
+
+```{bash, eval=FALSE}
+mawk -f ./scripts/polarize_freqs shared.outlier_rc | cut -f10-39 | mawk '!/maa/' > shared.outlier.RISG.dp20.pool
+```
+
+```{r}
+pool.data.shared <- read.table("shared.outlier.RISG.dp20.pool")
+
+df.pool.shared <- apply(pool.data.shared, c(1, 2), function(x) eval(parse(text = x)))
+
+pool.data2.shared <- t(df.pool.shared)
+
+filename.shared <- read.pcadapt(pool.data2.shared, type = "pool")
+res.shared <- pcadapt(filename.shared, min.maf = 0.1)
+```
+
+```{r}
+par(mfrow = c(2, 2))
+for (i in 1:4)
+  plot(res.shared$loadings[, i], pch = 19, cex = .3, ylab = paste0("Loadings PC", i))
+```
+
+```{r}
+plot(res.shared,option="screeplot")
+```
+
+```{r}
+res.shared <- pcadapt(filename.shared, K =4,min.maf = 0.001)
+poplist.names <- c("Initial","Initial","Initial","Initial","Control","Control","Control","Stress","Stress","Stress","Initial","Initial","Initial","Initial","Control","Control","Control","Stress","Stress","Stress","Initial","Initial","Initial","Initial","Control","Control","Control","Stress","Stress","Stress")
+p1.shared <- plot(res.shared, option = "scores", i = 1, j = 2, pop = poplist.names,
+           col = c("#56B4E9", "purple", "orange"))
+```
+
+```{r}
+poplist.names <- c(rep("Block2", 10),rep("Block3", 10),rep("Block4", 10))
+p1.shared <- plot(res.shared, option = "scores", i = 1, j = 2, pop = poplist.names)
+```
+
+## Shared genes across Blocks 
+
+```{bash, eval=FALSE}
+# For each Block, saving the significant loci as a bed file and then finding genes those loci fall in
+cut -f1,2 B2.total.outlier.input | sort -k1,2 | uniq | mawk '{print $1 "\t" $2-1 "\t" $2}' | bedtools sort -i - > RISG.Block2.Significant.loci.bed
+
+bedtools intersect -wb -a RISG.Block2.Significant.loci.bed -b sorted.ref3.0.gene.bed | grep -oh "gene=LOC.*;g" | sed 's/gene=//g' | sed 's/;g//g' | sort | uniq > Sig.gene.B2.LOC
+
+cut -f1,2 B3.total.outlier.input | sort -k1,2 | uniq | mawk '{print $1 "\t" $2-1 "\t" $2}' | bedtools sort -i - > RISG.Block3.Significant.loci.bed
+
+bedtools intersect -wb -a RISG.Block3.Significant.loci.bed -b sorted.ref3.0.gene.bed | grep -oh "gene=LOC.*;g" | sed 's/gene=//g' | sed 's/;g//g' | sort | uniq > Sig.gene.B3.LOC
+
+cut -f1,2 B4.total.outlier.input | sort -k1,2 | uniq | mawk '{print $1 "\t" $2-1 "\t" $2}' | bedtools sort -i - > RISG.Block4.Significant.loci.bed
+
+bedtools intersect -wb -a RISG.Block4.Significant.loci.bed -b sorted.ref3.0.gene.bed | grep -oh "gene=LOC.*;g" | sed 's/gene=//g' | sed 's/;g//g' | sort | uniq > Sig.gene.B4.LOC
+```
+
+```{bash, eval=FALSE}
+# Which genes overlap for all Blocks - can reveal shared signatures of selection across distinct genomic pools
+comm -12 <(sort Sig.gene.B2.LOC) <(sort Sig.gene.B3.LOC) | comm -12 - <(sort Sig.gene.B4.LOC) > Sig.gene.shared.AB.LOC
+```
+
+## Gene Ontology with TopGO
+
+I have a gaf from NCBI with the GO terms for genes in the eastern oyster genome. I'm going to take this file and extract the Gene IDs and associated GO terms.
+
+In terminal:
+
+```{bash}
+wget https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/002/022/765/GCF_002022765.2_C_virginica-3.0/GCF_002022765.2_C_virginica-3.0_gene_ontology.gaf.gz
+
+gunzip GCF_002022765.2_C_virginica-3.0_gene_ontology.gaf.gz
+
+mv GCF_002022765.2_C_virginica-3.0_gene_ontology.gaf gene_ontology.gaf
+```
+
+Making a new .tab file with just the gene ID and GO IDs (3rd and 5th columns) renamed "gene_name" and "GeneOntologyIDs". The gene_name column will have one unique observation per row and all associated GO terms will be saved in the same row, with values separaetd by ;
+
+```{bash}
+awk 'NR>9 {print $3 "\t" $5}' gene_ontology.gaf | 
+sed '1i gene_name\tGeneOntologyIDs' | 
+sort | awk '
+NR==1 {print; next}
+$1!=prev {
+if (NR>2) print prev "\t" goids;
+prev=$1;
+goids=$2;
+next
+}
+{
+goids=goids "; " $2
+}
+END {print prev "\t" goids}
+' > gene2go_full.tab
+```
+
+Gene IDs for the candidate loci are saved to `Sig.loci.TOTAL.RISG.LOC`
+
+I'm making another file with the gene IDs and GO IDs for the candidate loci:
+
+```{bash}
+grep -F -f Sig.loci.TOTAL.RISG.LOC gene2go_full.tab > risg_ab_cand_genes_GO.tab
+
+# Add header
+awk 'BEGIN {print "gene_name\tGeneOntologyIDs"} {print}' risg_ab_cand_genes_GO.tab > risg_ab_cand_genes_GO_head.tab
+```
+
+In R:
+
+```{r}
+#if (!require("BiocManager", quietly = TRUE))
+    #install.packages("BiocManager")
+
+#BiocManager::install("topGO")
+```
+
+```{r setup, include=FALSE}
+library(topGO)
+```
+
+Read in gene2go information 
+
+Old file names: all_genes (gene2go_full.tab); candidate genes (gene2go.tab)
+
+```{r}
+all_gene2go<-read.delim("gene2go_full.tab", sep="\t")
+out_gene2go<-read.delim("risg_ab_cand_genes_GO_head.tab", sep="\t")
+```
+
+Make list of genes for input to TopGO
+
+```{r}
+cand_genes <- as.character(unique(out_gene2go$gene_name))
+all_genes <- as.character(all_gene2go$gene_name)
+out_GeneList <- factor(as.integer(all_genes %in% cand_genes))
+names(out_GeneList) <- all_genes
+```
+
+The following code will perform GO enrichment using the weighted Fisher's exact test  
+
+Read in gene-to-go-mappings
+```{r}
+gene2go_topgo<-readMappings("gene2go_full.tab", IDsep=";", sep="\t")
+```
+
+Set function to select genes of interest (ie those that have pvalue < 0.05)
+```{r}
+topDiffGenes <- function(allScore) {
+return(allScore < 0.05)}
+```
+
+### Biological Processes
+
+Create `topGOdata` object, which is required for topGO analysis
+```{r}
+GO_OUT_BP_pi <-new("topGOdata", ontology="BP", gene2GO=gene2go_topgo, allGenes=out_GeneList, annot = annFUN.gene2GO, geneSel=topDiffGenes)
+```
+
+Run GO enrichment test 
+```{r}
+GO_OUT_BP_FE_pi <- runTest(GO_OUT_BP_pi, algorithm="weight01", statistic="fisher")
+```
+
+Generate results table 
+```{r}
+GO_OUT_BP_En_pi <- GenTable(GO_OUT_BP_pi, Fisher = GO_OUT_BP_FE_pi, orderBy = "Fisher",  topNodes = 100, numChar = 100)
+```
+Only taking the top 100 GO terms 
+
+Filter by significant results
+```{r}
+GO_OUT_BP_En_pi$Fisher<-as.numeric(GO_OUT_BP_En_pi$Fisher)
+GO_OUT_BP_En_sig_pi<-GO_OUT_BP_En_pi[GO_OUT_BP_En_pi$Fisher<0.05,]
+```
+
+Merge `GO_OUT_BP_En_sig_pi` with GO and gene info. 
+```{r}
+# Separate GO terms 
+out_gene2go <- out_gene2go %>%
+  separate_rows(GeneOntologyIDs, sep = ";")
+
+# Ensure GO terms in both datasets are formatted similarly (trim whitespaces)
+out_gene2go$GeneOntologyIDs <- trimws(out_gene2go$GeneOntologyIDs)
+GO_OUT_BP_En_sig_pi$GO.ID <- trimws(GO_OUT_BP_En_sig_pi$GO.ID)
+
+# Join the datasets based on GO term
+GO_OUT_BP_En_sig_gene_pi <- out_gene2go %>%
+  left_join(GO_OUT_BP_En_sig_pi, by = c("GeneOntologyIDs" = "GO.ID")) %>%
+  na.omit()
+
+# Add ontology column 
+GO_OUT_BP_En_sig_gene_pi$ontology <- "Biological Processes"
+```
+
+### Cellular Components
+
+Create `topGOdata` object, which is required for topGO analysis
+```{r}
+GO_OUT_CC_pi <-new("topGOdata", ontology="CC", gene2GO=gene2go_topgo, allGenes=out_GeneList, annot = annFUN.gene2GO, geneSel=topDiffGenes)
+```
+
+Run GO enrichment test 
+```{r}
+GO_OUT_CC_FE_pi <- runTest(GO_OUT_CC_pi, algorithm="weight01", statistic="fisher")
+```
+
+Generate results table 
+```{r}
+GO_OUT_CC_En_pi <- GenTable(GO_OUT_CC_pi, Fisher = GO_OUT_CC_FE_pi, orderBy = "Fisher",  topNodes = 100, numChar = 100)
+```
+Only taking the top 100 GO terms 
+
+Filter by significant results
+```{r}
+GO_OUT_CC_En_pi$Fisher<-as.numeric(GO_OUT_CC_En_pi$Fisher)
+GO_OUT_CC_En_sig_pi<-GO_OUT_CC_En_pi[GO_OUT_CC_En_pi$Fisher<0.05,]
+```
+
+Merge `GO_OUT_CC_En_sig_pi` with GO and gene info. 
+```{r}
+# Separate GO terms 
+out_gene2go <- out_gene2go %>%
+  separate_rows(GeneOntologyIDs, sep = ";")
+
+# Ensure GO terms in both datasets are formatted similarly (trim whitespaces)
+out_gene2go$GeneOntologyIDs <- trimws(out_gene2go$GeneOntologyIDs)
+GO_OUT_CC_En_sig_pi$GO.ID <- trimws(GO_OUT_CC_En_sig_pi$GO.ID)
+
+# Join the datasets based on GO term
+GO_OUT_CC_En_sig_gene_pi <- out_gene2go %>%
+  left_join(GO_OUT_CC_En_sig_pi, by = c("GeneOntologyIDs" = "GO.ID")) %>%
+  na.omit()
+
+# Add ontology column 
+GO_OUT_CC_En_sig_gene_pi$ontology <- "Cellular Components"
+```
+
+### Molecular Functions
+
+Create `topGOdata` object, which is required for topGO analysis
+```{r}
+GO_OUT_MF_pi <-new("topGOdata", ontology="MF", gene2GO=gene2go_topgo, allGenes=out_GeneList, annot = annFUN.gene2GO, geneSel=topDiffGenes)
+```
+
+Run GO enrichment test 
+```{r}
+GO_OUT_MF_FE_pi <- runTest(GO_OUT_MF_pi, algorithm="weight01", statistic="fisher")
+```
+
+Generate results table 
+```{r}
+GO_OUT_MF_En_pi <- GenTable(GO_OUT_MF_pi, Fisher = GO_OUT_MF_FE_pi, orderBy = "Fisher",  topNodes = 100, numChar = 100)
+```
+Only taking the top 100 GO terms 
+
+Filter by significant results
+```{r}
+GO_OUT_MF_En_pi$Fisher<-as.numeric(GO_OUT_MF_En_pi$Fisher)
+GO_OUT_MF_En_sig_pi<-GO_OUT_MF_En_pi[GO_OUT_MF_En_pi$Fisher<0.05,]
+```
+
+Merge `GO_OUT_MF_En_sig_pi` with GO and gene info. 
+```{r}
+# Separate GO terms 
+out_gene2go <- out_gene2go %>%
+  separate_rows(GeneOntologyIDs, sep = ";")
+
+# Ensure GO terms in both datasets are formatted similarly (trim whitespaces)
+out_gene2go$GeneOntologyIDs <- trimws(out_gene2go$GeneOntologyIDs)
+GO_OUT_MF_En_sig_pi$GO.ID <- trimws(GO_OUT_MF_En_sig_pi$GO.ID)
+
+# Join the datasets based on GO term
+GO_OUT_MF_En_sig_gene_pi <- out_gene2go %>%
+  left_join(GO_OUT_MF_En_sig_pi, by = c("GeneOntologyIDs" = "GO.ID")) %>%
+  na.omit()
+
+# Add ontology column 
+GO_OUT_MF_En_sig_gene_pi$ontology <- "Molecular Functions"
+```
+
+### Join ontologies
+
+Bind `GO_OUT_BP_En_sig_gene_pi`, `GO_OUT_CC_En_sig_gene_pi`, and `GO_OUT_MF_En_sig_gene_pi` to make a df that has significantly enriched GO terms for all ontologies 
+```{r}
+GO_OUT_En_sig_gene_pi <- rbind(GO_OUT_BP_En_sig_gene_pi, GO_OUT_CC_En_sig_gene_pi, GO_OUT_MF_En_sig_gene_pi)
+```
+
+Merge `pi_bed_filt` with `GO_PEVE_En_sig_gene` and calculate proportion of significant genes
+```{r}
+merged_out_genes <- GO_OUT_En_sig_gene_pi %>%
+  mutate(prop.sig.genes = Significant/Annotated)
+
+# Write to csv 
+write.csv(merged_out_genes, "RISG_OUT_AB_GO_en_sig_gene.csv")
+```
+
+Plot  
+```{r}
+GO_plot_pi<-ggplot(merged_out_genes, aes(x = Term, y = -log(Fisher), size = prop.sig.genes, fill = -log(Fisher))) +
+  expand_limits(y = 1.5) +
+  ylim(1, 7.25) +
+  #Add horizontal lines with a single aesthetic value
+  geom_hline(yintercept = -log10(0.01), linetype = "longdash", colour = "black", linewidth = .6) +
+  geom_hline(yintercept = -log10(0.001), linetype = "solid", colour = "black", linewidth = .6) +
+  geom_point(shape = 21) + 
+  scale_size(range = c(2, 12)) + 
+  scale_fill_continuous(low = "#1AD3D1FF", high = "#4686FBFF") +
+  xlab('') + 
+  ylab('Enrichment score') +
+  #labs(caption = 'Cut-off lines at p=0.01 and p=0.001') +
+  theme_bw() +
+  facet_grid(vars(ontology), scales = "free", space = "free_y") +
+  coord_flip(); GO_plot_pi
+```
+
+
+
+### Repeating just for genes overlapped by all Blocks
+
+Gene IDs for the shared candidate loci for all blocks are saved to `Sig.gene.shared.AB.LOC`
+
+I'm making another file with the gene IDs and GO IDs for the candidate loci:
+
+```{bash}
+grep -F -f Sig.gene.shared.AB.LOC gene2go_full.tab > risg_shared_cand_genes_GO.tab
+
+# Add header
+awk 'BEGIN {print "gene_name\tGeneOntologyIDs"} {print}' risg_shared_cand_genes_GO.tab > risg_shared_cand_genes_GO_head.tab
+```
+
+In R:
+
+```{r}
+#if (!require("BiocManager", quietly = TRUE))
+    #install.packages("BiocManager")
+
+#BiocManager::install("topGO")
+```
+
+```{r setup, include=FALSE}
+library(topGO)
+```
+
+Read in gene2go information 
+
+Old file names: all_genes (gene2go_full.tab); candidate genes (gene2go.tab)
+
+```{r}
+all_gene2go<-read.delim("gene2go_full.tab", sep="\t")
+out_gene2go<-read.delim("risg_shared_cand_genes_GO_head.tab", sep="\t")
+```
+
+Make list of genes for input to TopGO
+
+```{r}
+cand_genes <- as.character(unique(out_gene2go$gene_name))
+all_genes <- as.character(all_gene2go$gene_name)
+out_GeneList <- factor(as.integer(all_genes %in% cand_genes))
+names(out_GeneList) <- all_genes
+```
+
+The following code will perform GO enrichment using the weighted Fisher's exact test  
+
+Read in gene-to-go-mappings
+```{r}
+gene2go_topgo<-readMappings("gene2go_full.tab", IDsep=";", sep="\t")
+```
+
+Set function to select genes of interest (ie those that have pvalue < 0.05)
+```{r}
+topDiffGenes <- function(allScore) {
+return(allScore < 0.05)}
+```
+
+### Biological Processes
+
+Create `topGOdata` object, which is required for topGO analysis
+```{r}
+GO_OUT_BP_pi <-new("topGOdata", ontology="BP", gene2GO=gene2go_topgo, allGenes=out_GeneList, annot = annFUN.gene2GO, geneSel=topDiffGenes)
+```
+
+Run GO enrichment test 
+```{r}
+GO_OUT_BP_FE_pi <- runTest(GO_OUT_BP_pi, algorithm="weight01", statistic="fisher")
+```
+
+Generate results table 
+```{r}
+GO_OUT_BP_En_pi <- GenTable(GO_OUT_BP_pi, Fisher = GO_OUT_BP_FE_pi, orderBy = "Fisher",  topNodes = 100, numChar = 100)
+```
+Only taking the top 100 GO terms 
+
+Filter by significant results
+```{r}
+GO_OUT_BP_En_pi$Fisher<-as.numeric(GO_OUT_BP_En_pi$Fisher)
+GO_OUT_BP_En_sig_pi<-GO_OUT_BP_En_pi[GO_OUT_BP_En_pi$Fisher<0.05,]
+```
+
+Merge `GO_OUT_BP_En_sig_pi` with GO and gene info. 
+```{r}
+# Separate GO terms 
+out_gene2go <- out_gene2go %>%
+  separate_rows(GeneOntologyIDs, sep = ";")
+
+# Ensure GO terms in both datasets are formatted similarly (trim whitespaces)
+out_gene2go$GeneOntologyIDs <- trimws(out_gene2go$GeneOntologyIDs)
+GO_OUT_BP_En_sig_pi$GO.ID <- trimws(GO_OUT_BP_En_sig_pi$GO.ID)
+
+# Join the datasets based on GO term
+GO_OUT_BP_En_sig_gene_pi <- out_gene2go %>%
+  left_join(GO_OUT_BP_En_sig_pi, by = c("GeneOntologyIDs" = "GO.ID")) %>%
+  na.omit()
+
+# Add ontology column 
+GO_OUT_BP_En_sig_gene_pi$ontology <- "Biological Processes"
+```
+
+### Cellular Components
+
+Create `topGOdata` object, which is required for topGO analysis
+```{r}
+GO_OUT_CC_pi <-new("topGOdata", ontology="CC", gene2GO=gene2go_topgo, allGenes=out_GeneList, annot = annFUN.gene2GO, geneSel=topDiffGenes)
+```
+
+Run GO enrichment test 
+```{r}
+GO_OUT_CC_FE_pi <- runTest(GO_OUT_CC_pi, algorithm="weight01", statistic="fisher")
+```
+
+Generate results table 
+```{r}
+GO_OUT_CC_En_pi <- GenTable(GO_OUT_CC_pi, Fisher = GO_OUT_CC_FE_pi, orderBy = "Fisher",  topNodes = 100, numChar = 100)
+```
+Only taking the top 100 GO terms 
+
+Filter by significant results
+```{r}
+GO_OUT_CC_En_pi$Fisher<-as.numeric(GO_OUT_CC_En_pi$Fisher)
+GO_OUT_CC_En_sig_pi<-GO_OUT_CC_En_pi[GO_OUT_CC_En_pi$Fisher<0.05,]
+```
+
+Merge `GO_OUT_CC_En_sig_pi` with GO and gene info. 
+```{r}
+# Separate GO terms 
+out_gene2go <- out_gene2go %>%
+  separate_rows(GeneOntologyIDs, sep = ";")
+
+# Ensure GO terms in both datasets are formatted similarly (trim whitespaces)
+out_gene2go$GeneOntologyIDs <- trimws(out_gene2go$GeneOntologyIDs)
+GO_OUT_CC_En_sig_pi$GO.ID <- trimws(GO_OUT_CC_En_sig_pi$GO.ID)
+
+# Join the datasets based on GO term
+GO_OUT_CC_En_sig_gene_pi <- out_gene2go %>%
+  left_join(GO_OUT_CC_En_sig_pi, by = c("GeneOntologyIDs" = "GO.ID")) %>%
+  na.omit()
+
+# Add ontology column 
+GO_OUT_CC_En_sig_gene_pi$ontology <- "Cellular Components"
+```
+
+### Molecular Functions
+
+Create `topGOdata` object, which is required for topGO analysis
+```{r}
+GO_OUT_MF_pi <-new("topGOdata", ontology="MF", gene2GO=gene2go_topgo, allGenes=out_GeneList, annot = annFUN.gene2GO, geneSel=topDiffGenes)
+```
+
+Run GO enrichment test 
+```{r}
+GO_OUT_MF_FE_pi <- runTest(GO_OUT_MF_pi, algorithm="weight01", statistic="fisher")
+```
+
+Generate results table 
+```{r}
+GO_OUT_MF_En_pi <- GenTable(GO_OUT_MF_pi, Fisher = GO_OUT_MF_FE_pi, orderBy = "Fisher",  topNodes = 100, numChar = 100)
+```
+Only taking the top 100 GO terms 
+
+Filter by significant results
+```{r}
+GO_OUT_MF_En_pi$Fisher<-as.numeric(GO_OUT_MF_En_pi$Fisher)
+GO_OUT_MF_En_sig_pi<-GO_OUT_MF_En_pi[GO_OUT_MF_En_pi$Fisher<0.05,]
+```
+
+Merge `GO_OUT_MF_En_sig_pi` with GO and gene info. 
+```{r}
+# Separate GO terms 
+out_gene2go <- out_gene2go %>%
+  separate_rows(GeneOntologyIDs, sep = ";")
+
+# Ensure GO terms in both datasets are formatted similarly (trim whitespaces)
+out_gene2go$GeneOntologyIDs <- trimws(out_gene2go$GeneOntologyIDs)
+GO_OUT_MF_En_sig_pi$GO.ID <- trimws(GO_OUT_MF_En_sig_pi$GO.ID)
+
+# Join the datasets based on GO term
+GO_OUT_MF_En_sig_gene_pi <- out_gene2go %>%
+  left_join(GO_OUT_MF_En_sig_pi, by = c("GeneOntologyIDs" = "GO.ID")) %>%
+  na.omit()
+
+# Add ontology column 
+GO_OUT_MF_En_sig_gene_pi$ontology <- "Molecular Functions"
+```
+
+### Join ontologies
+
+Bind `GO_OUT_BP_En_sig_gene_pi`, `GO_OUT_CC_En_sig_gene_pi`, and `GO_OUT_MF_En_sig_gene_pi` to make a df that has significantly enriched GO terms for all ontologies 
+```{r}
+GO_OUT_En_sig_gene_pi <- rbind(GO_OUT_BP_En_sig_gene_pi, GO_OUT_CC_En_sig_gene_pi, GO_OUT_MF_En_sig_gene_pi)
+```
+
+Merge `pi_bed_filt` with `GO_PEVE_En_sig_gene` and calculate proportion of significant genes
+```{r}
+merged_out_genes <- GO_OUT_En_sig_gene_pi %>%
+  mutate(prop.sig.genes = Significant/Annotated)
+
+# Write to csv 
+write.csv(merged_out_genes, "RISG_OUT_SHARED_GO_en_sig_gene.csv")
+```
+
+Plot  
+```{r}
+GO_plot_pi<-ggplot(merged_out_genes, aes(x = Term, y = -log(Fisher), size = prop.sig.genes, fill = -log(Fisher))) +
+  expand_limits(y = 1.5) +
+  ylim(1, 7.25) +
+  #Add horizontal lines with a single aesthetic value
+  geom_hline(yintercept = -log10(0.01), linetype = "longdash", colour = "black", linewidth = .6) +
+  geom_hline(yintercept = -log10(0.001), linetype = "solid", colour = "black", linewidth = .6) +
+  geom_point(shape = 21) + 
+  scale_size(range = c(2, 12)) + 
+  scale_fill_continuous(low = "#1AD3D1FF", high = "#4686FBFF") +
+  xlab('') + 
+  ylab('Enrichment score') +
+  #labs(caption = 'Cut-off lines at p=0.01 and p=0.001') +
+  theme_bw() +
+  facet_grid(vars(ontology), scales = "free", space = "free_y") +
+  coord_flip(); GO_plot_pi
+```
+
+## Initial timepoint nucleotide diversity
+
+Using grenedalf:
+
+[grenedalf Github](https://github.com/lczech/grenedalf/wiki/Subcommand:-diversity#description)
+
+In PATH: `/home/azyck/RISG_Larval/RISG_ddocent/RISG_Larval_SNPFiltering`
+
+```{bash}
+mamba env create -c conda-forge -c bioconda -n grenedalf grenedalf
+conda activate grenedalf
+```
+
+```{bash}
+mkdir grenedalf
+cd grenedalf
+```
+
+```{bash}
+ln -s ../SNP.RISG.TRSdp.20.B90.2a.perp.vcf.gz .
+ln -s ../reference.fasta .
+ln -s ../reference.fasta.fai .
+ln -s ../T0_samples .
+```
+
+I needed switch the order of the chromosomes in the .fasta.fai file so that NC_035789.1 was at the end. 
+
+```
+NC_007175.2   17244   13    17244   17245
+NC_035780.1   65668440    32667330    65668440    65668441
+NC_035781.1   61752955    98335784    61752955    61752956
+NC_035782.1   77061148    160088753   77061148    77061149
+NC_035783.1   59691872    237149915   59691872    59691873
+NC_035784.1   98698416    296841801   98698416    98698417
+NC_035785.1   51258098    395540231   51258098    51258099
+NC_035786.1   57830854    446798343   57830854    57830855
+NC_035787.1   75944018    504629211   75944018    75944019
+NC_035788.1   104168038   580573243   104168038   104168039
+NC_035789.1   32650045    17271   32650045    32650046
+```
+
+```{bash}
+grenedalf diversity \
+    --vcf-path /home/azyck/RISG_Larval/RISG_ddocent/RISG_Larval_SNPFiltering/grenedalf/SNP.RISG.TRSdp.20.B90.2a.perp.vcf.gz \
+    --reference-genome-fai reference.fasta.fai \
+    --filter-samples-include T0_samples \
+    --pool-sizes 80000 \
+    --window-type interval \
+    --window-interval-width 10000 \
+    --window-interval-stride 0 \
+    --window-average-policy valid-loci \
+    --filter-sample-min-count 2 \
+    --filter-sample-min-read-depth 10
+```
+
+For most of the inputs, I used the default options. For --pool-sizes, it's the number of individuals in the sample x2 as oysters are diploid. 
+
+```
+# Output
+
+At chromosome NC_035780.1
+At chromosome NC_035781.1
+At chromosome NC_035782.1
+At chromosome NC_035783.1
+At chromosome NC_035784.1
+At chromosome NC_035785.1
+At chromosome NC_035786.1
+At chromosome NC_035787.1
+At chromosome NC_035788.1
+At chromosome NC_035789.1
+
+Processed 68108 windows.
+Processed 10 chromosomes with 980787 positions.
+
+Sample filter summary (summed up across all samples):
+Missing: 194959
+Passed:  11574485
+
+Total filter summary (after applying all sample filters):
+Invariant: 5383
+Passed:    975404
+
+Finished 2025-04-18 17:38:07
+```
+
+This produces a .csv file called diversity .csv
+
+I made a new directory `T0_diversity` and moved the .csv to this location for organizational purposes. I also renamed the csv to T0_diversity.csv.
+
+Read in .csv file
+
+```{r}
+larv.nuc.diversity <- read.csv("/home/azyck/RISG_Larval/RISG_ddocent/RISG_Larval_SNPFiltering/grenedalf/T0_diversity/T0_diversity.csv")
+```
+
+I need to modify this dataframe quite a bit to be able to run statistical analyses:
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(stringr)
+```
+
+**Pivot to Long Format**
+You want to gather all the population-specific columns (like B2_T0_1.theta_pi, etc.) into long format.
+
+```{r}
+# Identify columns for pivoting
+pop_cols <- grep("B[234]_T0_\\d+\\.(missing|numeric|passed|theta_pi|theta_watterson|tajimas_d)", 
+                 names(larv.nuc.diversity), value = TRUE)
+
+larv_long <- larv.nuc.diversity %>%
+  pivot_longer(
+    cols = all_of(pop_cols),
+    names_to = c("POP", "METRIC"),
+    names_pattern = "(B[234]_T0_\\d+)\\.(.*)",
+    values_to = "VALUE"
+  )
+```
+
+**Filter for theta_pi and passed**
+You want one row per population per bin, with theta_pi as PI and passed as N_VARIANTS.
+
+```{r}
+larv_wide <- larv_long %>%
+  filter(METRIC %in% c("theta_pi", "passed")) %>%
+  pivot_wider(
+    names_from = METRIC,
+    values_from = VALUE
+  )
+```
+
+**Add GROUP Column**
+Extract group (B2, B3, B4) from POP.
+
+```{r}
+larv_final <- larv_wide %>%
+  mutate(
+    GROUP = str_extract(POP, "B[234]"),
+    CHROM = chrom,
+    BIN_START = start,
+    BIN_END = end,
+    N_VARIANTS = as.integer(passed),
+    PI = as.numeric(theta_pi)
+  ) %>%
+  dplyr::select(CHROM, BIN_START, BIN_END, N_VARIANTS, PI, POP, GROUP)
+```
+
+**Remove Rows with Missing PI or N_VARIANTS**
+
+```{r}
+larv_final <- larv_final %>%
+  filter(!is.na(PI), !is.na(N_VARIANTS))
+```
+
+```{r}
+larv_final$GROUP <- factor(larv_final$GROUP, levels=c("B2", "B3","B4"))
+larv_final$POP <- factor(larv_final$POP, levels=c("B2_T0_1", "B2_T0_2", "B2_T0_3", "B2_T0_4", "B3_T0_1", "B3_T0_2", "B3_T0_3", "B3_T0_4", "B4_T0_1", "B4_T0_2", "B4_T0_3", "B4_T0_4"))
+```
+
+**Plotting**
+
+```{r}
+bd.pi <-ggplot(larv_final, aes(x=PI,y = POP))+
+  #geom_violin(aes(color=GROUP,fill= GROUP)) +
+  #stat_summary(fun=mean, geom="point", shape=23, size=4)+
+  #geom_dotplot(binaxis='y', stackdir='center', dotsize=0.005)+
+  geom_boxplot(aes(fill=GROUP), width=0.75,outlier.shape = 23, outlier.color = "black")+
+  geom_vline(xintercept =mean(larv_final$PI),linetype = "dashed") +
+  stat_summary(fun=mean, geom="point", shape=23, size=2)+
+  scale_fill_manual(values=c("#CC79A7", "#009E73", "#0072B2"))+
+  scale_color_manual(values=c("#CC79A7", "#009E73", "#0072B2"))+
+  scale_y_discrete(limits = rev(levels(larv_final$POP)))+
+  #ylab("Population/Line")+
+  labs(x=expression(pi)) +
+  ggtitle("Experimental Block Initial TimePoint Nucleotide Diversity")+
+  theme_classic() +
+  theme(axis.title.y = element_blank()) 
+bd.pi
+```
+
+**Stats**
+
+```{r}
+library(car)
+library(MASS)
+```
+
+I'm going to run an ANOVA to compare PI between each experimental block.
+
+```{r}
+anova_model <- aov(PI ~ GROUP, data = larv_final)
+```
+
+I need to check for normality: 
+
+```{r}
+qqPlot(residuals(anova_model)) 
+```
+
+The data is not normally distributed. I'm going to do a non-parametric test
+
+```{r}
+kruskal.test(PI ~ GROUP, data = larv_final)
+```
+
+The ANOVA is significant, so I will run a post hoc test.
+
+```{r}
+pairwise.wilcox.test(larv_final$PI, larv_final$GROUP, p.adjust.method = "bonferroni")
+```
+
+It looks like all groups are significantly different from one another.
+
+
+I want to double check the significance between groups and check effect sizes. The p-values are really small which may be because there are so many data points. Effect size may allow for a more accurate comparison between groups. First I will split up the data set into sets of two groups:
+
+```{r}
+# Create a new data frame excluding one group
+B2_B3_PI <-larv_final[larv_final$GROUP != "B4", ]
+B2_B4_PI <-larv_final[larv_final$GROUP != "B3", ]
+B3_B4_PI <-larv_final[larv_final$GROUP != "B2", ]
+```
+
+This allows me to run t-tests using infer
+
+```{r}
+library(infer)
+library(plotrix)
+```
+
+```{r}
+B2_B3_PI %>% t_test(formula = PI ~ GROUP, alternative = "two.sided",order = c("B2", "B3"))
+```
+
+I'm also going to calculate eta squared: 
+
+```{r}
+lm = aov(B2_B3_PI$PI ~ B2_B3_PI$GROUP)
+summary(lm)
+effect_size <- effectsize::eta_squared(lm, partial=F)
+effect_size
+```
+
+Repeat for comparison between B2 and B4:
+
+```{r}
+B2_B4_PI %>% t_test(formula = PI ~ GROUP, alternative = "two.sided",order = c("B2", "B4"))
+```
+
+```{r}
+lm = aov(B2_B4_PI$PI ~ B2_B4_PI$GROUP)
+summary(lm)
+effect_size <- effectsize::eta_squared(lm, partial=F)
+effect_size
+```
+
+Repeat for comparison between B3 and B4:
+
+```{r}
+B3_B4_PI %>% t_test(formula = PI ~ GROUP, alternative = "two.sided",order = c("B3", "B4"))
+```
+
+```{r}
+lm = aov(B3_B4_PI$PI ~ B3_B4_PI$GROUP)
+summary(lm)
+effect_size <- effectsize::eta_squared(lm, partial=F)
+effect_size
+```
+
+So the t-tests confirm the ANOVA results and effect sizes are really low across the board. I think this is the nature of the data. 
+
+**Calculate summary statistics**
+
+```{r}
+risg_pi_summary <- larv_final %>%
+  group_by(GROUP) %>%
+  summarize(
+    count = n(),
+    min = min(PI, na.rm = TRUE),
+    q1 = quantile(PI, 0.25, na.rm = TRUE),
+    median = median(PI, na.rm = TRUE),
+    mean = mean(PI, na.rm = TRUE),
+    q3 = quantile(PI, 0.75, na.rm = TRUE),
+    max = max(PI, na.rm = TRUE),
+    sd = sd(PI, na.rm = TRUE)
+  )
+```
+
+
+
+
+### Repeating to compare T0 to TJE within each Block
+
+I made two new files: the `sample_names` file includes all the sample names (may not be necessary since these are all the samples in the vcf file); and the `pool_size` file is all the individuals in the first column with their pool sizes in the second column, tab delimited. Again, pool sizes are the number of individuals in each pool x2 as oysters are diploid. 
+
+```{bash}
+head /home/azyck/RISG_Larval/RISG_ddocent/RISG_Larval_SNPFiltering/grenedalf/pool_sizes
+```
+
+```{bash}
+grenedalf diversity \
+    --vcf-path /home/azyck/RISG_Larval/RISG_ddocent/RISG_Larval_SNPFiltering/grenedalf/SNP.RISG.TRSdp.20.B90.2a.perp.vcf.gz \
+    --reference-genome-fai reference.fasta.fai \
+    --filter-samples-include sample_names \
+    --pool-sizes pool_sizes \
+    --window-type interval \
+    --window-interval-width 10000 \
+    --window-interval-stride 0 \
+    --window-average-policy valid-loci \
+    --filter-sample-min-count 2 \
+    --filter-sample-min-read-depth 10 \
+    --out-dir /home/azyck/RISG_Larval/RISG_ddocent/RISG_Larval_SNPFiltering/grenedalf/wBlock_diversity \
+    --file-prefix all_samples_
+```
+
+```
+# Output
+
+Started 2025-07-07 11:09:20
+
+Reading reference genome fai
+Reference genome contains 11 chromosomes
+Sample filter results in 30 samples out of 30 being used.
+Processing 30 samples
+
+At chromosome NC_035780.1
+At chromosome NC_035781.1
+At chromosome NC_035782.1
+At chromosome NC_035783.1
+At chromosome NC_035784.1
+At chromosome NC_035785.1
+At chromosome NC_035786.1
+At chromosome NC_035787.1
+At chromosome NC_035788.1
+At chromosome NC_035789.1
+
+Processed 68108 windows.
+Processed 10 chromosomes with 980787 positions.
+
+Sample filter summary (summed up across all samples):
+Missing: 2870366
+Passed:  26553244
+
+Total filter summary (after applying all sample filters):
+Invariant: 89
+Passed:    980698
+
+Finished 2025-07-07 11:15:13
+```
+
+Read in .csv file
+
+```{r}
+larv.nuc.diversity.all <- read.csv("/home/azyck/RISG_Larval/RISG_ddocent/RISG_Larval_SNPFiltering/grenedalf/wBlock_diversity/all_samples_diversity.csv")
+```
+
+**Pivot to Long Format**
+You want to gather all the population-specific columns (like B2_T0_1.theta_pi, etc.) into long format.
+
+```{r}
+pop_cols_all <- grep(
+  "B[234]_T(?:0|CE)_(?:\\d+|CB\\d+|HB\\d+)\\.(missing|numeric|passed|theta_pi|theta_watterson|tajimas_d)",
+  names(larv.nuc.diversity.all), value = TRUE
+)
+
+larv_long_all <- larv.nuc.diversity.all %>%
+  pivot_longer(
+    cols = all_of(pop_cols_all),
+    names_to = c("POP", "METRIC"),
+    names_pattern = "(B[234]_T(?:0|CE)_(?:\\d+|CB\\d+|HB\\d+))\\.(.*)",
+    values_to = "VALUE"
+  )
+```
+
+**Filter for theta_pi and passed**
+You want one row per population per bin, with theta_pi as PI and passed as N_VARIANTS.
+
+```{r}
+larv_wide_all <- larv_long_all %>%
+  filter(METRIC %in% c("theta_pi", "passed")) %>%
+  pivot_wider(
+    names_from = METRIC,
+    values_from = VALUE
+  )
+```
+
+**Add GROUP Column**
+Extract group (B2, B3, B4) from POP.
+
+```{r}
+larv_final_all <- larv_wide_all %>%
+  mutate(
+    GROUP = str_extract(POP, "B[234]"),
+    TIMEPOINT = str_extract(POP, "T(?:0|CE)"),
+    CHROM = chrom,
+    BIN_START = start,
+    BIN_END = end,
+    N_VARIANTS = as.integer(passed),
+    PI = as.numeric(theta_pi),
+    TREATMENT = case_when(
+      str_detect(POP, "T0") ~ "T0",
+      str_detect(POP, "CB\\d+$") ~ "CB",
+      str_detect(POP, "HB\\d+$") ~ "HB",
+      TRUE ~ NA_character_
+    )
+  ) %>%
+  dplyr::select(CHROM, BIN_START, BIN_END, N_VARIANTS, PI, POP, GROUP, TIMEPOINT, TREATMENT)
+```
+
+**Remove Rows with Missing PI or N_VARIANTS**
+
+```{r}
+larv_final_all <- larv_final_all %>%
+  filter(!is.na(PI), !is.na(N_VARIANTS))
+```
+
+```{r}
+larv_final_all$GROUP <- factor(larv_final_all$GROUP, levels=c("B2", "B3","B4"))
+larv_final_all$TIMEPOINT <- factor(larv_final_all$TIMEPOINT, levels=c("T0", "TCE"))
+larv_final_all$TREATMENT <- factor(larv_final_all$TREATMENT, levels=c("T0", "CB","HB"))
+larv_final_all$POP <- factor(larv_final_all$POP, levels=c("B2_T0_1", "B2_T0_2", "B2_T0_3", "B2_T0_4", "B2_TCE_CB1", "B2_TCE_CB2", "B2_TCE_CB3", "B2_TCE_HB1", "B2_TCE_HB2", "B2_TCE_HB3", "B3_T0_1", "B3_T0_2", "B3_T0_3", "B3_T0_4", "B3_TCE_CB1", "B3_TCE_CB2", "B3_TCE_CB3", "B3_TCE_HB1", "B3_TCE_HB2", "B3_TCE_HB3", "B4_T0_1", "B4_T0_2", "B4_T0_3", "B4_T0_4", "B4_TCE_CB1", "B4_TCE_CB2", "B4_TCE_CB3", "B4_TCE_HB1", "B4_TCE_HB2", "B4_TCE_HB3"))
+```
+
+**Plotting**
+
+```{r}
+bd.pi.all <-ggplot(larv_final_all, aes(x=PI,y = POP))+
+  #geom_violin(aes(color=GROUP,fill= GROUP)) +
+  #stat_summary(fun=mean, geom="point", shape=23, size=4)+
+  #geom_dotplot(binaxis='y', stackdir='center', dotsize=0.005)+
+  geom_boxplot(aes(fill=GROUP), width=0.75,outlier.shape = 23, outlier.color = "black")+
+  geom_vline(xintercept =mean(larv_final_all$PI),linetype = "dashed") +
+  stat_summary(fun=mean, geom="point", shape=23, size=2)+
+  scale_fill_manual(values=c("#CC79A7", "#009E73", "#0072B2"))+
+  scale_color_manual(values=c("#CC79A7", "#009E73", "#0072B2"))+
+  scale_y_discrete(limits = rev(levels(larv_final_all$POP)))+
+  #ylab("Population/Line")+
+  labs(x=expression(pi)) +
+  ggtitle("Nucleotide Diversity")+
+  theme_classic() +
+  theme(axis.title.y = element_blank()) 
+bd.pi.all
+```
+
+**Stats**
+
+First, I need to subset the meta data frame by Block:
+
+```{r}
+block2_df <- filter(larv_final_all, GROUP == "B2")
+block3_df <- filter(larv_final_all, GROUP == "B3")
+block4_df <- filter(larv_final_all, GROUP == "B4")
+```
+
+I'm going to run an ANOVA to compare PI between T0 and the the final timepoint samples CB and HB within each experimental block.
+
+**Block 2**
+
+```{r}
+b2_aov_model <- aov(PI ~ TREATMENT, data = block2_df)
+```
+
+I need to check for normality: 
+
+```{r}
+qqPlot(residuals(b2_aov_model)) 
+```
+
+The data is not normally distributed. I'm going to do a non-parametric test
+
+```{r}
+kruskal.test(PI ~ TREATMENT, data = block2_df)
+```
+
+Also running separate t-tests comparing PI between T0 and CB 
+
+```{r}
+b2_t0_cb <- subset(block2_df, TREATMENT %in% c("T0", "CB"))
+t.test(PI ~ TREATMENT, data = b2_t0_cb)
+```
+
+and T0 and HB
+
+```{r}
+b2_t0_hb <- subset(block2_df, TREATMENT %in% c("T0", "HB"))
+t.test(PI ~ TREATMENT, data = b2_t0_hb)
+```
+
+
+**Block 3**
+
+```{r}
+b3_aov_model <- aov(PI ~ TREATMENT, data = block3_df)
+```
+
+I need to check for normality: 
+
+```{r}
+qqPlot(residuals(b3_aov_model)) 
+```
+
+The data is not normally distributed. I'm going to do a non-parametric test
+
+```{r}
+kruskal.test(PI ~ TREATMENT, data = block3_df)
+```
+
+The ANOVA is significant, so I will run a post hoc test.
+
+```{r}
+pairwise.wilcox.test(block3_df$PI, block3_df$TREATMENT, p.adjust.method = "bonferroni")
+```
+
+Also running separate t-tests comparing PI between T0 and CB 
+
+```{r}
+b3_t0_cb <- subset(block3_df, TREATMENT %in% c("T0", "CB"))
+t.test(PI ~ TREATMENT, data = b3_t0_cb)
+```
+
+and T0 and HB
+
+```{r}
+b3_t0_hb <- subset(block3_df, TREATMENT %in% c("T0", "HB"))
+t.test(PI ~ TREATMENT, data = b3_t0_hb)
+```
+
+**Block 4**
+
+```{r}
+b4_aov_model <- aov(PI ~ TREATMENT, data = block4_df)
+```
+
+I need to check for normality: 
+
+```{r}
+qqPlot(residuals(b4_aov_model)) 
+```
+
+The data is not normally distributed. I'm going to do a non-parametric test
+
+```{r}
+kruskal.test(PI ~ TREATMENT, data = block4_df)
+```
+
+The ANOVA is significant, so I will run a post hoc test.
+
+```{r}
+pairwise.wilcox.test(block4_df$PI, block4_df$TREATMENT, p.adjust.method = "bonferroni")
+```
+
+Also running separate t-tests comparing PI between T0 and CB 
+
+```{r}
+b4_t0_cb <- subset(block4_df, TREATMENT %in% c("T0", "CB"))
+t.test(PI ~ TREATMENT, data = b4_t0_cb)
+```
+
+and T0 and HB
+
+```{r}
+b4_t0_hb <- subset(block4_df, TREATMENT %in% c("T0", "HB"))
+t.test(PI ~ TREATMENT, data = b4_t0_hb)
+```
+
+To summarize: for Block 2, there is not a significant difference in genetic diversity from initial to end of exposure. For Block 3, there is a significant difference between initial and end for both Control and Stress treatments. For Block 4, there is a significant difference between initial and end for Stress but not Control. 
+
+**Calculate summary statistics**
+
+```{r}
+risg_pi_summary_all <- larv_final_all %>%
+  group_by(GROUP, TREATMENT) %>%
+  summarize(
+    count = n(),
+    min = min(PI, na.rm = TRUE),
+    q1 = quantile(PI, 0.25, na.rm = TRUE),
+    median = median(PI, na.rm = TRUE),
+    mean = mean(PI, na.rm = TRUE),
+    q3 = quantile(PI, 0.75, na.rm = TRUE),
+    max = max(PI, na.rm = TRUE),
+    sd = sd(PI, na.rm = TRUE)
+  )
+```
+
